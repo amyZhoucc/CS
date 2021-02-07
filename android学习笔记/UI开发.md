@@ -93,6 +93,8 @@ Android中最简单的一个控件了，主要就是在页面上显示一段文�
 
 **系统默认会对Button中的所有英文字母自动进行大写转换**，可以修改来禁用该默认配置。
 
+`android:textAllCaps="false"`
+
 button的通常使用：（在activity中已经用了很多了）
 
 为Button的点击事件**注册一个监听器**
@@ -804,49 +806,519 @@ FrameLayout由于定位方式的欠缺，导致它的应用场景也比较少，
 
 提前准备：百分比布局是新布局，所以需要导包——Android团队将百分比布局定义在了support库当中，我们只需要在**项目的build.gradle中添加百分比布局库的依赖**，就能保证百分比布局在Android所有系统版本上的兼容性了。
 
+具体操作（和书上有些区别）：
 
+```groovy
+dependencies {
+    ....
+    // for layout in percentLayout for frameLayout & relativeLayout
+    implementation "androidx.percentlayout:percentlayout:1.0.0"     
+}
+```
 
+每当修改了任何gradle文件时，Android Studio都会弹出提示，主要就是通知：gradle文件自上次同步之后又发生了变化，需要再次同步才能使项目正常工作。只需要点击Sync Now就可以了，然后gradle会开始进行同步，把我们新添加的百分比布局库引入到项目当中。
 
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.percentlayout.widget.PercentFrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <Button
+        android:id="@+id/button1"
+        android:text="Button 1"
+        android:layout_gravity="left|top"
+        app:layout_widthPercent="50%"
+        app:layout_heightPercent="50%"
+        />
+    <Button
+        android:id="@+id/button2"
+        android:text="Button 2"
+        android:layout_gravity="right|top"
+        app:layout_widthPercent="50%"
+        app:layout_heightPercent="50%"
+        />
+    <Button
+        android:id="@+id/button3"
+        android:text="Button 3"
+        android:layout_gravity="left|bottom"
+        app:layout_widthPercent="50%"
+        app:layout_heightPercent="50%"
+        />
+    <Button
+        android:id="@+id/button4"
+        android:text="Button 4"
+        android:layout_gravity="right|bottom"
+        app:layout_widthPercent="50%"
+        app:layout_heightPercent="50%"
+        />
+</androidx.percentlayout.widget.PercentFrameLayout>
+```
 
+理解：
 
+1. 由于百分比布局并不是内置在系统SDK当中的，所以需要把完整的包路径写出来——`androidx.percentlayout.widget.PercentFrameLayout`
 
+2. 必须定义一个app的命名空间，这样才能使用百分比布局的自定义属性——`xmlns:app="http://schemas.android.com/apk/res-auto"`
 
+   `app:layout_widthPercent="xxx"`、`app:layout_heightPercent="xxx"`两个属性可以按照比例来设定
 
+   ——之所以能使用**app前缀的属性就是因为刚才定义了app的命名空间**
 
+   能使用android前缀的属性也是同样的道理（因为前面定义了`xmlns:android="xxxx"`，这个就是定义了命名空间）
 
+3. 用`layout_gravity`决定四个按钮的位置，可以用新的方法决定`layout_gravity="right|bottom"`
 
+4. 这样写好之后是可以正常运行的，但是AS内置的语法检查器可能会提示错误：认为每一个控件都应该通过android:layout_width和android:layout_height属性指定宽高才是合法的——可以直接忽略，因为百分比布局是用`layout_widthPercent/layout_heightPercent`来指定宽和长的
 
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210206105701695.png" alt="image-20210206105701695" style="zoom:50%;" />
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+PercentRelativeLayout类似，不研究。
 
 
 
 # 自定义控件
 
+先关注一下，控件、布局之间的继承关系：
+
+<img src="pic/inherited.jpg" style="zoom:50%;" >
+
+所用的所有控件都是直接或间接继承自View的，所用的所有布局都是直接或间接继承自ViewGroup的，而ViewGroup也是继承自View的，所以控件、布局都有一个公共的祖先：View
+
+View：**Android中最基本的一种UI组件，它可以在屏幕上绘制一块矩形区域，并能响应这块区域的各种事件**。所以，使用的各种控件其实就是在View的基础之上又添加了各自特有的功能。而ViewGroup则是一种特殊的View，它可以包含很多子View和子ViewGroup，是一个用于放置控件和布局的容器（递归调用）。
+
+当系统自带的控件并不能满足我们的需求时，则可以**利用上面的继承结构来创建自定义控件**。有2种方法创建自定义控件：
+
+## 1. 引入布局
+
+目标：模仿iPhone的风格，在界面的顶部放置一个标题栏，标题栏上会有一到两个按钮可用于返回或其他操作——创建一个自定义的标题栏。
+
+类似于这样：
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210206111032277.png" alt="image-20210206111032277" style="zoom:50%;" />
+
+如果单纯实现这样一个页面很简单：只需要2个button + 1个textView就可以实现，但是如果需要整个app都要这样的风格，不可能重复画轮子——可以使用**引入布局的方式**来解决这个问题，即将一个布局作为模板使用
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"		// 标题宽度跟随父布局，整个长度
+    android:layout_height="wrap_content"	// 标题高度包住内容即可
+    android:background="@mipmap/title_bg">
+    <Button
+        android:id="@+id/title_back"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="5dp"
+        android:background="@mipmap/back_bg"
+
+        android:text="Back"
+        android:textColor="#fff"
+        android:textAllCaps="false" />
+    <TextView
+        android:id="@+id/title_text"
+
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_weight="1"
+
+        android:text="Title Text"
+        android:gravity="center"
+        android:textColor="#fff"
+        android:textSize="24dp" />
+    <Button
+        android:id="@+id/title_edit"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_margin="5dp"
+        android:background="@mipmap/edit_bg"
+
+        android:text="Edit"
+        android:textColor="#fff"
+        android:textAllCaps="false" />
+</LinearLayout>
+```
+
+理解：
+
+1. 新的属性：`android:background="xxxx"`——填入的内容是按照图片存放的位置，不需要填入图片的类型后缀。`@mipmap/xxx`
+2. 控件新的属性：`android:layout_margin="xxx"`，它可以指定控件在上下左右方向上偏移的距离（上下左右边距都一样），当然也可以使用`android:layout_marginLeft`或`android:layout_marginTop`等属性来单独指定控件在某个方向上偏移的距离。
+
+编写完成，就要看如何使用了
+
+```xml
+// activity_main.xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    <include layout="@layout/title_model"/>
+</LinearLayout>
+```
+
+理解：只需要<include>就可以引入了——<include layout="xxxx" />
+
+但是，系统会自带一个标题栏，所以需要将默认的标题栏隐藏掉。
+
+```java
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+    ActionBar actionBar = getSupportActionBar();
+    if(actionBar != null){
+        actionBar.hide();
+    }
+}
+```
+
+理解：
+
+1. 调用了`getSupportActionBar()`获得ActionBar的实例对象，然后将该实例对象隐藏起来：`actionBar.hide()`
+
+   （p.s. 12章会讲ActionBar）
 
 
-# ListView详解
+
+## 2. 创建自定义控件
+
+针对某些控件存在统一的功能，如果这个控件每次使用都要在对应的java文件中注册并且响应，那么又是存在重复代码的问题
+
+eg：标题栏的返回按钮：都是统一功能——点击之后销毁当前活动，可以写一个统一的代码
+
+——**使用自定义控件**的方式。
+
+```java
+public class TitleLayout extends LinearLayout {
+    public TitleLayout(Context context, AttributeSet attributeSet){	// 构造函数
+        super(context, attributeSet);
+        LayoutInflater.from(context).inflate(R.layout.title_model, this);
+        Button backButton = (Button) findViewById(R.id.title_back);
+        Button editButton = (Button) findViewById(R.id.title_edit);
+        backButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ((Activity)getContext()).finish();
+            }
+        });
+        editButton.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Toast.makeText(getContext(), "you clicked edit button", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+}
+
+```
+
+理解：
+
+1. 该标题栏布局继承了<LinearLayout>，因为前面设定的标题栏是在<LinearLayout>下的一个布局。
+
+2. 重写了LinearLayout中带有两个参数的构造函数：
+
+   - 先继承父类的`super(xxx)`；
+
+   - 在构造函数中需要对标题栏布局进行**动态加载，这就要借助`LayoutInflater`来实现**了：`LayoutInflater.from(context)`——构造出一个`LayoutInflater`的实例对象，然后用`inflate(xxx)`动态加载一个布局——就将功能和布局绑定起来了
+
+     inflate需要传递的是两个参数：需要加载的布局文件的id——`R.layout.title_main`（就是上面的标题栏布局），一个是在前面布局上的父布局，这边就是该文件自己（本身继承自LinearLayout，所以也是布局类型），所以就用this
+
+3. 然后为标题栏的两个按钮注册点击事件——同之前的操作：获取该按钮id，然后注册+编写响应操作
+
+   注意这边的Toast，第一个参数是`Context`，可以通过`getContext()`获得
+
+   注意finish需要指定activity，所以可以先获得context：`getContext()`，然后强制类型转换即可，因为一个活动本身也是一个context——`((Activity)getContext()).finish()`
+
+——这样**自定义控件就完成了（实际上就是写一个java文件，继承自某个android内置布局，然后重写构造方法，动态加载之前写好的模板布局，并且把需要的响应等逻辑操作编写在里面）**
+
+那么该如何使用呢？——在xml文件中导入，用绝对路径：
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    <com.example.uitest.TitleLayout					
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+</LinearLayout>
+```
+
+理解：可以将自定义控件看成一个普通的控件，eg: button，导入方法一样，只不过导入的时候需要写的是绝对路径——指明控件的完整类名，即`包名 + 类名`——效果和上面的include一样，只不过这个还增加了逻辑响应。
+
+
+
+# ListView（最常见的控件）
+
+ListView是**最常见的控件之一，几乎所有的应用程序都会使用到**。
+
+背景：程序有大量东西需要显示，但是一个页面显示的内容有限，则需要扩展，所以设计了上下滑动方式
+
+ListView允许用户通过**手指上下滑动的方式**将屏幕外的数据滚动到屏幕内，同时屏幕上原有的数据则会滚动出屏幕。
+
+## 1. ListView的简单用法
+
+由于ListView是控件，所以需要添加到布局文件中，添加布局比较简单：
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+    <ListView
+        android:id="@+id/list_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+</LinearLayout>
+```
+
+理解：关键词就是<ListView>，然后添加id、layout_width、layout_height这些控件必须有的，就完成了。AS给的外观大致是这样：
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210207111715048.png" alt="image-20210207111715048" style="zoom:50%;" />
+
+可以看到一条条栏目。
+
+但是，此时只是引入了布局，里面还没有填入数据、
+
+ListView是用于展示大量数据的，所以需要有数据——可以是从网上下载的，也可以是从数据库中读取的，应该视具体的应用程序场景而定。
+
+关于ListView数据的导入需要写在java的逻辑中：
+
+```java
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+    private String[] data = { "Apple", "Banana", "Orange", "Watermelon",
+                             "Pear", "Grape", "Pineapple", "Strawberry", "Cherry", "Mango",
+                             "Apple", "Banana", "Orange", "Watermelon", "Pear", "Grape",
+                             "Pineapple", "Strawberry", "Cherry", "Mango" };
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(MainActivity.this, 				                                                           android.R.layout.simple_list_item_1, data);
+        ListView listView = (ListView) findViewById(R.id.list_view);
+        listView.setAdapter(arrayAdapter);
+    }
+```
+
+理解：
+
+1. 首先，这边是直接创建一个数组，存放很多数据——`String[] data={....}`
+
+2. 接着，数组中的数据是无法直接传递给ListView的，我们还需要借助**适配器来完成——`ArrayAdapter`**——它可以通过泛型来指定要适配的数据类型，然后在构造函数中把要适配的数据传入。
+
+   ArrayAdapter有多个构造函数的重载，根据数据的实际情况选择。这边提供的是String类型，所以传入的泛型类型是String
+
+   **构造函数的参数：当前的上下文，ListView子项布局的id，数据对象**
+
+   `android.R.layout.simple_list_item_1`是作为ListView子项布局的id，它实际上是Android内置的布局文件，里面只有一个TextView，可以简单的显示一个文本，即数据中的一个条目就是一个子项，就是一个TextView
+
+   ps：Android提供了很多适配器的实现类，但是书中推荐用ArrayAdapter。
+
+   ——这样，ArrayAdapter实例对象就构建完成了
+
+3. 最后调用`ListView`的**`setAdapter()`**方法，将构建好的适配器传递进去，那么ListView和数据的关联就完成了，就可以显示数据了
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210207114429485.png" alt="image-20210207114429485" style="zoom:50%;" />
+
+它实际上是可以上下滚动的。
+
+## 2. 定制ListView页面
+
+上面是对ListView的简单应用，比较单调。我们需要丰富内容，那么就需要定制该页面。
+
+目标：将前面的单调的水果名称展示页面加上对应的图标，每个条目左边图标右边文字
+
+步骤：
+
+1. 先创建一个Fruit类，用来存放每个水果对应的条目
+
+   包括：水果名字（String）、水果图片的路径（int——因为），对应的构造方法和get属性的方法
+
+   ```java
+   public class Fruit {
+       private String name;
+       private int imgId;
+       public Fruit(String name, int imgId){
+           this.name = name;
+           this.imgId = imgId;
+       }
+       public int getImgId() {
+           return imgId;
+       }
+       public String getName() {
+           return name;
+       }
+   }
+   ```
+
+2. 后面创建一个条目的布局——类比于内置的布局：`android.R.layout.simple_list_item_1`，即自定义一个布局：图片 +文字
+
+   ```xml
+   <LinearLayout
+       xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content">
+       <ImageView
+           android:id="@+id/fruit_img"
+   
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content" />
+       <TextView
+           android:id="@+id/fruit_name"
+   
+           android:layout_width="wrap_content"
+           android:layout_height="wrap_content"
+           android:layout_gravity="center_vertical"
+           android:layout_margin="10dp"/>
+   </LinearLayout>
+   ```
+
+   理解：
+
+   1. layout的布局的宽度`match_parent`，高度`wrap_content`，因为是一个条目，不能宽度充满整个空间，只需要包住内容即可
+   2. 添加`ImageView`，存放图片，宽度和高度都和内容一致
+   3. 添加`TextView`，存放文本内容，宽度和高度都和内容一致，为了和图片保持一致，所以要将文本内容在垂直方向上居中——在当前的laypout中居中
+
+3. 自定义一个适配器，对应`ArrayAdapter`：
+
+   ```java
+   public class FruitAdapter extends ArrayAdapter<Fruit> {
+       private int rID;	// 保存当前布局条目id
+       public FruitAdapter(Context context, int textViewRID, List<Fruit> objs){
+           super(context, textViewRID, objs);
+           rID = textViewRID;
+       }
+   
+       @NonNull
+       @Override
+       public View getView(int position, View convertView, ViewGroup parent) {
+           Fruit fruit = getItem(position);        // 获得当前的水果实例
+           View view = LayoutInflater.from(getContext()).inflate(rID, parent, false);  // 获得当前的布局
+           ImageView fruitImg = (ImageView) view.findViewById(R.id.fruit_img);     // 当前布局的图片对象
+           TextView fruitName = (TextView) view.findViewById(R.id.fruit_name);     // 当前布局的文本对象
+           fruitImg.setImageResource(fruit.getImgId());            // 设置当前的图片对象的具体图片内容
+           fruitName.setText(fruit.getName());         // 设置当前文本对象的具体的文本内容
+           return view;            // 然后将设置好的内容返回——就是一个条目
+       }
+   }
+   ```
+
+   理解：
+
+   1. 该FruitAdapter继承自ArrayAdapter，并将泛型指定为Fruit类
+
+   2. 重写构造方法：需要有的参数和`ArrayAdapter`对应：上下文、ListView子项布局的id和数据，主要就是调用父类的构造方法，并且保存当前的条目布局的id，主要是给view使用——`inflate()`（第一个参数，是需要加载的布局文件的id）
+
+   3. 另外又重写了**getView()方法**，这个方法在每个子项被滚动到屏幕内的时候会被调用
+
+      - 首先通过**`getItem()`**方法得到当前项的Fruit实例
+      - 使用LayoutInflater来为这个子项加载我们传入的布局，首先需要获得当前的上下文`getContext()`，然后调用`inflate()`：需要动态加载的布局文件id，父布局，然后是false——**表示只让我们在父布局中声明的layout属性生效，但不会为这个View添加父布局，因为一旦View有了父布局之后，它就不能再添加到ListView中了**（暂时理解到，这是ListView中的标准写法）
+      - 之后就是获取该布局中的两个元素`TextView`和`ImageView`的对象，然后对它们分别设置对应的文字和图片——就是当前fruit item的两个属性，然后将该配置好的view返回
+
+      ——自定义的适配器就完成了
+
+   4. 然后在`activity_main.xml`中引入`ListView`控件，同上的简单用法
+
+      ```xml
+      <LinearLayout
+          xmlns:android="http://schemas.android.com/apk/res/android"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent" >
+          <ListView
+              android:id="@+id/list_view"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent" />
+      </LinearLayout>
+      ```
+
+   5. 然后在MainActivity中进行使用：
+
+      ```java
+      public class MainActivity extends AppCompatActivity{
+          private List<Fruit> fruitList = new ArrayList<>();
+          @Override
+          protected void onCreate(Bundle savedInstanceState) {
+              super.onCreate(savedInstanceState);
+              setContentView(R.layout.activity_main);
+              initFruit();
+              FruitAdapter fruitAdapter = new FruitAdapter(MainActivity.this, R.layout.fruit_item, fruitList);
+              ListView listView = (ListView) findViewById(R.id.list_view);
+              listView.setAdapter(fruitAdapter);
+          }
+      
+          private void initFruit(){
+              for(int i = 0; i < 2; i++){
+                  Fruit apple = new Fruit("apple", R.mipmap.apple_pic);
+                  fruitList.add(apple);
+                  ....
+                  Fruit mango = new Fruit("mango", R.mipmap.mango_pic);
+                  fruitList.add(mango);
+              }
+          }
+      }
+      ```
+
+      - 需要提供数据：使用一个List，用来Fruit类型的数据，并且编写一个`initFruit`用来初始化数据——主要是创建fruit实例对象和将该对象添加到list中，该list会作为数据传入
+      - 在`onCreate`中创建一个`FruitAdapter`的实例对象，将三个参数传入：上下文、条目布局文件id、数据
+      - 然后获取当前页面对应的布局文件，并且将FruitAdapter对象作为参数导入`listview.setAdapter`
+
+   ——至此，定制控件已经完成。
+
+   可以发现一个定制的步骤：首先需要定制页面，即创建一个xml文件，将每个item的布局情况定下来，上面就是`fruit_item.xml`；后面一般会创建一个对应的类，将一个item中用到的数据包装成一个对象，对应上面的`Fruit.java`；自定义一个适配器，是继承自ArrayAdapter，然后重写构造方法和getView()方法——将xml文件和其动态绑定起来，并且也将类对象对应起来，对应上面的`FruitAdapter.java`；——定制已经完成
+
+   使用：在xml文件中就按照普通的ListView的控件的使用方法一样；在java文件中，需要先创建好数据，然后创建一个自定义适配器的对象，调用构造方法将参数传递过去即可，然后用ListView的setAdapter导入该对象即可。
+
+   ## 3. 提升ListView的运行效率
+
+   说ListView这个控件很难用，是因为它有很多细节可以优化——运行效率就是很重要的一点。
+
+   前面创建的ListView的运行效率是很低的，因为在FruitAdapter的getView()方法中，每次都将布局重新加载了一遍，当ListView快速滚动的时候，这就会成为性能的瓶颈。
+
+   这边可以用到：getView()方法中还有一个**convertView参数，这个参数用于将之前加载好的布局进行缓存**，以便之后可以进行重用。
+
+   
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
