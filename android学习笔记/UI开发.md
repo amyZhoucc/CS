@@ -872,7 +872,7 @@ dependencies {
 
 4. 这样写好之后是可以正常运行的，但是AS内置的语法检查器可能会提示错误：认为每一个控件都应该通过android:layout_width和android:layout_height属性指定宽高才是合法的——可以直接忽略，因为百分比布局是用`layout_widthPercent/layout_heightPercent`来指定宽和长的
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210206105701695.png" alt="image-20210206105701695" style="zoom:50%;" />
+<img src="pic\image-20210206105701695.png" alt="image-20210206105701695" style="zoom:50%;" />
 
 PercentRelativeLayout类似，不研究。
 
@@ -896,7 +896,7 @@ View：**Android中最基本的一种UI组件，它可以在屏幕上绘制一�
 
 类似于这样：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210206111032277.png" alt="image-20210206111032277" style="zoom:50%;" />
+<img src="pic\image-20210206111032277.png" alt="image-20210206111032277" style="zoom:50%;" />
 
 如果单纯实现这样一个页面很简单：只需要2个button + 1个textView就可以实现，但是如果需要整个app都要这样的风格，不可能重复画轮子——可以使用**引入布局的方式**来解决这个问题，即将一个布局作为模板使用
 
@@ -1080,7 +1080,7 @@ ListView允许用户通过**手指上下滑动的方式**将屏幕外的数据�
 
 理解：关键词就是<ListView>，然后添加id、layout_width、layout_height这些控件必须有的，就完成了。AS给的外观大致是这样：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210207111715048.png" alt="image-20210207111715048" style="zoom:50%;" />
+<img src="pic\image-20210207111715048.png" alt="image-20210207111715048" style="zoom:50%;" />
 
 可以看到一条条栏目。
 
@@ -1124,7 +1124,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 3. 最后调用`ListView`的**`setAdapter()`**方法，将构建好的适配器传递进去，那么ListView和数据的关联就完成了，就可以显示数据了
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210207114429485.png" alt="image-20210207114429485" style="zoom:50%;" />
+<img src="pic\image-20210207114429485.png" alt="image-20210207114429485" style="zoom:50%;" />
 
 它实际上是可以上下滚动的。
 
@@ -1274,52 +1274,647 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
    使用：在xml文件中就按照普通的ListView的控件的使用方法一样；在java文件中，需要先创建好数据，然后创建一个自定义适配器的对象，调用构造方法将参数传递过去即可，然后用ListView的setAdapter导入该对象即可。
 
-   ## 3. 提升ListView的运行效率
-
-   说ListView这个控件很难用，是因为它有很多细节可以优化——运行效率就是很重要的一点。
-
-   前面创建的ListView的运行效率是很低的，因为在FruitAdapter的getView()方法中，每次都将布局重新加载了一遍，当ListView快速滚动的时候，这就会成为性能的瓶颈。
-
-   这边可以用到：getView()方法中还有一个**convertView参数，这个参数用于将之前加载好的布局进行缓存**，以便之后可以进行重用。
-
    
 
+## 3. 提升ListView的运行效率
 
+说ListView这个控件很难用，是因为它有很多细节可以优化——运行效率就是很重要的一点。
 
+问题：前面创建的ListView的运行效率是很低的，因为在FruitAdapter的getView()方法中，每次都将布局重新加载了一遍，即每渲染一个item，都需要重新加载view布局。当ListView快速滚动的时候，这就会成为性能的瓶颈。
 
+这边可以用到：getView()方法中还有一个**convertView参数，这个参数用于将之前加载好的布局进行缓存**，以便之后可以进行重用。——只需要在加载view的时候进行判断，如果convertView有内容，就不用再加载view，可以使用缓存的；而如果convert为空，说明是第一次加载，则需要重新加载
 
+```java
+if(convertView == null){
+    view = LayoutInflater.from(getContext()).inflate(rID, parent, false);
+}
+else{
+    view = convertView;
+}
+```
 
+优化之后，页面更加顺滑一点了
 
+还能再优化：
 
+问题：每次在getView()方法中还是会调用View的findViewById()方法来获取一次控件的实例——借助一个ViewHolder来对这部分性能进行优化
 
+```java
+public class FruitAdapter extends ArrayAdapter<Fruit> {
+    private int rID;
+    public FruitAdapter(Context context, int textViewRID, List<Fruit> objs){
+        super(context, textViewRID, objs);
+        rID = textViewRID;
+    }
 
+    @Override
+    public View getView(int position, View convertView, ViewGroup parent) {
+        Fruit fruit = getItem(position);        // 获得当前的水果实例
+        View view;
+        ViewHolder viewHolder;
+        if (convertView == null){
+            view =LayoutInflater.from(getContext()).inflate(rID, parent, false);
+            viewHolder = new ViewHolder();
+            viewHolder.imageView = (ImageView) view.findViewById(R.id.fruit_img);
+            viewHolder.textView = (TextView) view.findViewById(R.id.fruit_name);
+            view.setTag(viewHolder);
+        }
+        else {
+            view = convertView;
+            viewHolder = (ViewHolder) view.getTag();
+        }
+        viewHolder.imageView.setImageResource(fruit.getImgId());          // 设置当前的图片对象的具体图片内容
+        viewHolder.textView.setText(fruit.getName());         // 设置当前文本对象的具体的文本内容
+        return view;            // 然后将设置好的内容返回——就是一个条目
+    }
+    class ViewHolder{       // 创建一个内部类
+        ImageView imageView;
+        TextView textView;
+    }
+}
+```
 
+理解：
 
+1. 新增了一个内部类ViewHolder，用于对控件的实例进行缓存
+2. 当convertView为null的时候，创建一个ViewHolder对象，并将控件的实例都存放在ViewHolder里，然后调用View的setTag()方法，将ViewHolder对象存储在View中。
+3. 当convertView不为null的时候，则调用View的getTag()方法，把ViewHolder重新取出。这样所有控件的实例都缓存在了ViewHolder里，就没有必要每次都通过findViewById()方法来获取控件实例了。
 
+——可以发现，性能修改就在构造的适配器中，减去不需要的重复操作，用缓存保存避免重新加载——`convertView`是默认的缓存；而`View`可以提供显式的缓存，`setTag`和`getTag`对应使用，可以获得之前的缓存
 
+## 4. ListView的点击事件
 
+目标：点击每个item要进行一定的响应
 
+```java
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+    initFruit();
+    FruitAdapter fruitAdapter = new FruitAdapter(MainActivity.this, R.layout.fruit_item, fruitList);
+    ListView listView = (ListView) findViewById(R.id.list_view);
+    listView.setAdapter(fruitAdapter);
+    listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            Fruit fruit = fruitList.get(position);
+            Toast.makeText(MainActivity.this, fruit.getName(), Toast.LENGTH_SHORT).show();
+        }
+    });
+}
+```
 
+理解：
 
+使用`setOnItemClickListener()`可以注册一个item的监听器，传递的参数是`OnItemClickListener`类型，是AdapterView的内部接口，这边同`View.OnClickListener`，实现一个匿名内部类，然后实现`onItemClick`的方法
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+如果用户点击了任何一个item就会回调onItemClick()方法。在这个方法中可以通过**position参数**判断出用户点击的是哪一个子项，然后获取到相应的水果，并通过Toast将水果的名字显示出来。
 
 
 
 # 滚动控件RecyclerView
+
+背景：ListView普通的使用性能比较差，如果进行性能优化效率较好，但是性能优化比较难；ListView的扩展性不够好，只能实现数据的纵向滚动，不能实现横向滚动。
+
+那么可以使用：RecyclerView，它可以说是一个增强版的ListView，不仅可以轻松实现和ListView同样的效果，还优化了ListView中存在的各种不足之处。目前Android官方更加推荐使用RecyclerView
+
+## 1. 导入
+
+RecyclerView不属于内部库，所以和PercentView一样，为了让RecyclerView在所有Android版本上都能使用，Android团队采取了同样的方式，将RecyclerView定义在了support库当中，我们需要手动导入——在项目的build.gradle中添加相应的依赖库。
+
+这边提供另一种自动方法：
+
+右键`app`文件夹 -> 选择`Open Module Setting` -> 选择`Dependencies` -> 点击➕，add Dependecies -> 选择第一个`Library Dependency` -> 输入要添加的库`recyclerview` -> 等出现之后选择google开发的那个（默认选中） -> 点击ok，即可导入
+
+<img src="pic\image-20210208111139319.png" alt="image-20210208111139319" style="zoom:50%;" />
+
+完成之后可以看一下`app/build.gradle`，可以发现第36行就是新添加的依赖库：
+
+<img src="pic\image-20210208111301427.png" alt="image-20210208111301427" style="zoom:50%;" />
+
+这个步骤主要针对的是，只知道要添加的对象名字，至于版本啥的毫无所知，那么可以用该方法找到最新的版本并且自动添加
+
+## 2. RecyclerView的基本用法
+
+目的：用RecyclerView实现ListView同样的效果
+
+前面创建的Fruit.java和Fruit_item.xml可以复用，在此基础上需要重新自定义一个适配器——`RecyclerFruitAdapter.java`，因为继承的类都不一样了，肯定需要再写一个：
+
+```java
+public class RecyclerFruitAdapter extends RecyclerView.Adapter<RecyclerFruitAdapter.ViewHolder>{
+    private List<Fruit> recyclerFruitList;
+    static class ViewHolder extends RecyclerView.ViewHolder{
+        ImageView imageView;
+        TextView textView;
+        public ViewHolder(View view){
+            super(view);
+            imageView = (ImageView) view.findViewById(R.id.fruit_img);
+            textView = (TextView) view.findViewById(R.id.fruit_name);
+        }
+    }
+    public RecyclerFruitAdapter(List<Fruit> recyclerFruitList){
+        this.recyclerFruitList = recyclerFruitList;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fruit_item, parent, false);
+        ViewHolder holder = new ViewHolder(view);
+        return holder;
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        Fruit fruit = recyclerFruitList.get(position);
+        holder.imageView.setImageResource(fruit.getImgId());
+        holder.textView.setText(fruit.getName());
+    }
+
+    @Override
+    public int getItemCount() {
+        return recyclerFruitList.size();
+    }
+}
+```
+
+理解：
+
+1. 继承自`RecyclerView.Adapter`，并且指定泛类是`RecyclerFruitAdapter.ViewHolder`——是下面实现的一个内部类
+2. 首先看内部类：ViewHolder，对照的是RecyclerAdater的内部类ViewHolder，且继承的也是它。该内部类：创建了两个实例变量；构造函数，要传入一个View参数，这个参数通常就是RecyclerView子项的最外层布局，那么就能够将view的里面两个控件对象取出并且存放到该实例变量中。
+3. RecyclerFruitAdapter也有构造方法：要展示的数据源传进来，并赋值给一个全局变量
+4. 由于继承，所以必须要重写：`onCreateViewHolder()`、`onBindViewHolder()`和`getItemCount()`这3个方法
+   - `onCreateViewHolder()`：用来创建ViewHolder实例的，获得当前的view：即用LayoutInflater，但是传递的参数稍微有点不同：**`LayoutInflater.from(parent.getContext()).inflate(R.layout.fruit_item, parent, false);`**，记住即可
+   - `onBindViewHolder()`：用于对RecyclerView子项的数据进行赋值的，会在每个子项被滚动到屏幕内的时候执行。可以通过position参数得到当前项的Fruit实例，然后再将当前fruit对象的数据内容设置到ViewHolder的ImageView和TextView当中即可——那么ViewHolder的数据绑定完成
+   - `getItemCount()`：用于告诉RecyclerView一共有多少子项，直接返回数据源的长度就可以了。
+
+适配器已经完成，下面就是使用了：
+
+activity_main.xml已经导入了recyclerView
+
+```java
+public class MainActivity extends AppCompatActivity implements View.OnClickListener{
+    private List<Fruit> fruitList = new ArrayList<>();
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initFruit();
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        RecyclerFruitAdapter fruitAdapter = new RecyclerFruitAdapter(fruitList);
+        recyclerView.setAdapter(fruitAdapter);
+    }
+    ....
+}
+```
+
+理解：
+
+1. initFruit沿用之前的
+2. 先去获得recyclerView对象，然后创建了一个LinearLayoutManager对象，并用`setLayoutManager()`方法将它设置到RecyclerView当中
+3. 创建一个RecyclerFruitAdapter适配器实例，将数据传进去，最后调用RecyclerView的setAdapter()方法来完成适配器设置，这样RecyclerView和数据之间的关联就建立完成了。
+
+运行之后效果和ListView类似：
+
+<img src="pic\image-20210208121939162.png" alt="image-20210208121939162" style="zoom:50%;" />
+
+但是，横线界限没有了，且没有点击效果（ListView是默认有点击效果的，没有写click逻辑时没有具体响应）
+
+代码量方面并没有明显地减少，但是逻辑变得更加清晰了
+
+## 3. 实现横向滚动和瀑布流布局
+
+背景：ListView的扩展性并不好，它只能实现纵向滚动的效果，如果想进行横向滚动的话，ListView就做不到了
+
+而RecyclerView可以实现且很简单。
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="100dp"			// 由于要变成横向，所以要控制每个item的宽度，设置为固定值100dp，如果设置为wrap_content，由于内容不同大小不同，会不统一；如果设置为match_parent，宽度过长，一个条目占满整个屏幕不好看
+    android:layout_height="wrap_content">
+    <ImageView
+        android:id="@+id/fruit_img"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" />	// 在水平方向上居中，即在100dp的宽度中居中
+    <TextView
+        android:id="@+id/fruit_name"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"	// 在100dp的宽度中居中
+        android:layout_marginTop="10dp"/>			// 文字需要和图片有一定的间隔
+
+</LinearLayout>
+```
+
+逻辑里面添加一句话即可：第3句
+
+```java
+protected void onCreate(Bundle savedInstanceState) {
+    ...
+    RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+    LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+    layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+    recyclerView.setLayoutManager(layoutManager);
+    ...
+}
+```
+
+理解：调用LinearLayoutManager的**`setOrientation()`**方法来设置布局的排列方向，默认是纵向排列的，我们传入**`LinearLayoutManager.HORIZONTAL`**表示让布局横行排列，这样RecyclerView就可以横向滚动了。
+
+能够简单实现的原因：得益于RecyclerView出色的设计。ListView的布局排列是由自身去管理的，而RecyclerView则将这个工作交给了LayoutManager, LayoutManager中制定了一套可扩展的布局排列接口，子类只要按照接口的规范来实现，就能定制出各种不同排列方式的布局了。
+
+并且，RecyclerView还提供了`GridLayoutManager`和`StaggeredGridLayoutManager`这两种内置的布局排列方式。**GridLayoutManager可以用于实现网格布局**，**StaggeredGridLayoutManager可以用于实现瀑布流布局**.
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"		// 将宽度设置为跟随父布局大小，这边需要根据布局的列数来自动适配的——后面代码中会设置列数
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp">		// 每个item之间留间隙
+    <ImageView
+        android:id="@+id/fruit_img"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal" />
+    <TextView
+        android:id="@+id/fruit_name"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"		// 因为文字有多行，所以居中不好看，选择向左对齐
+        android:layout_marginTop="10dp"/>		
+</LinearLayout>
+```
+
+MainActivity.java文件的修改
+
+```java
+protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initFruit();
+        RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        StaggeredGridLayoutManager layoutManager = new StaggeredGridLayoutManager(3, StaggeredGridLayoutManager.VERTICAL);		// 修改布局
+        recyclerView.setLayoutManager(layoutManager);
+        RecyclerFruitAdapter fruitAdapter = new RecyclerFruitAdapter(fruitList);
+        recyclerView.setAdapter(fruitAdapter);
+
+    }
+```
+
+理解：只需要将布局类型修改即可，将前面的`LinearLayoutManager`（线性布局，例如水平、垂直这样的普通布局就是线性的），修改成瀑布`StaggeredGridLayoutManager`，该构造函数需要2个参数：**布局的列数，布局的排列方向**`StaggeredGridLayoutManager.VERTICAL`
+
+（使用了Random对象来创造一个1到20之间的随机数，然后将参数中传入的字符串随机重复几遍。在initFruits()方法中，每个水果的名字都改成调用getRandomLengthName()这个方法来生成，这样就能保证各水果名字的长短差距都比较大，子项的高度也就各不相同了）
+
+最后效果如下：
+
+<img src="pic\image-20210208124156752.png" alt="image-20210208124156752" style="zoom:50%;" />
+
+## 4. RecyclerView的点击事件
+
+RecyclerView并没有提供类似于setOnItemClickListener()这样的注册监听器方法，而是需要我们自己给子项具体的View去注册点击事件，相比于ListView来说，实现起来要复杂一些。
+
+主要原因是：ListView在点击事件上的处理并不人性化，setOnItemClickListener()方法注册的是子项的点击事件，但如果我想点击的是子项里具体的某一个按钮呢？虽然ListView也是能做到的，但是实现起来就相对比较麻烦了。为此，RecyclerView干脆直接摒弃了子项点击事件的监听器，**所有的点击事件都由具体的View去注册，就再没有这个困扰了**。
+
+总结：RecyclerView的点击事件需要自行实现，那么能够自行设计，灵活度更大。
+
+首先需要明确：每个组件都是可以单独响应的，只要获得该对象，设置监听器，并且实现`View.onClickListener()`的`onClick()`方法，就可以了：
+
+```java
+static class ViewHolder extends RecyclerView.ViewHolder{
+    View view;
+    ImageView imageView;
+    TextView textView;
+    public ViewHolder(View view){
+        super(view);
+        this.view = view;		// add
+        imageView = (ImageView) view.findViewById(R.id.fruit_img);
+        textView = (TextView) view.findViewById(R.id.fruit_name);
+    }
+}
+public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+    View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.fruit_item, parent, false);
+    final ViewHolder holder = new ViewHolder(view);
+    holder.view.setOnClickListener(new View.OnClickListener() {		// add
+        @Override
+        public void onClick(View v) {
+            int position = holder.getAbsoluteAdapterPosition();
+            Fruit fruit = recyclerFruitList.get(position);
+            Toast.makeText(v.getContext(), "you clicked view " + fruit.getName(), Toast.LENGTH_SHORT).show();
+        }
+    });
+    holder.imageView.setOnClickListener(new View.OnClickListener() {		// add
+        @Override
+        public void onClick(View v) {
+            int position = holder.getAbsoluteAdapterPosition();
+            Fruit fruit = recyclerFruitList.get(position);
+            Toast.makeText(v.getContext(), "you clicked img " + fruit.getName(), Toast.LENGTH_SHORT).show();
+        }
+    });
+    return holder;
+}
+```
+
+理解：
+
+1. 在内部类中，增加一个实例变量：`View`的实例对象，保存子项最外层布局的实例
+
+2. 在`onCreateViewHolder`中注册监听器，这里分别为最外层布局和ImageView都注册了点击事件
+
+   **RecyclerView的强大之处也在这里，它可以轻松实现子项中任意控件或布局的点击事件**：调用方法：`xxx.setOnClickListener(new View.OnClickListener(){ public void onClick(View v){...}})`
+
+   首先，根据ViewHolder对象获取position：`holder.getAbsoluteAdapterPosition()`——关键
+
+   然后，根据position拿到fruit的实例对象：`get()`
+
+   那么能获得该对象的name/imgId
+
+运行之后效果如下：
+
+点击图片：
+
+<img src="pic\image-20210208161808213.png" alt="image-20210208161808213" style="zoom: 67%;" />
+
+点击文字，由于TextView没有被注册，那么是被外层的view捕捉到，所以响应的是view的内容
+
+<img src="pic\image-20210208161851741.png" alt="image-20210208161851741" style="zoom:50%;" />
+
+
+
+# 实践：聊天页面的实现
+
+## 1. 制作9-batch图片
+
+背景：一张普通的图片作为背景，可能会被拉长，拉宽，导致页面很不美观
+
+<img src="pic/origin.jpg" style="zoom:50%;" >
+
+所以需要将图片控制一下。
+
+AS内置了一种方法：**Nine-Patch【.9】图片，它是一种被特殊处理过的png图片，能够指定那些区域被拉伸、那些区域不可以。**
+
+在Android Studio中对着任意一张png图片右击——>选择`Create 9-Patch file`，即可创建Nine-Patch图片
+
+（在AndroidStudio2.3之前，在Android sdk目录下有一个tools文件夹，在这个文件夹中找到draw9patch.bat文件，我们可以使用它来制作Nine-Patch图片。）
+
+如何进行修改呢：
+
+- **上边框和左边框绘制的部分表示当图片需要拉伸时就拉伸黑点标记的区域**
+- **下边框和右边框绘制的部分表示内容会被放置的区域**
+
+<img src="pic\image-20210208171751063.png" alt="image-20210208171751063" style="zoom:50%;" />
+
+黑色线都是可以进行拖拽的
+
+点击保存就已经完成了，完成后的图片命名：`message_right.9.png`，使用这张图片替换掉之前的message_left.png图片，重新运行程序，就会变得正常：
+
+<img src="pic\image-20210208172059247.png" alt="image-20210208172059247" style="zoom:50%;" />
+
+## 2. 编写
+
+内容都是之前用到过的
+
+主要是利用`recyclerView`来实现
+
+代码清单：
+
+1. 创建信息的item类：Msg.java
+
+```java
+public class Msg {
+    public static final int TYPE_RECVED = 0;
+    public static final int TYPE_SENT = 1;
+    private String content;
+    private int type;
+    public Msg(String content, int type){
+        this.content = content;
+        this.type = type;
+    }
+    public String getContent(){
+        return content;
+    }
+
+    public int getType() {
+        return type;
+    }
+}
+```
+
+理解：一个信息有：内容和类型：是发送出去 or 收到的（主要对应不同的放置位置）
+
+2. 整体布局：activity_main.xml
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_height="match_parent"
+    android:layout_width="match_parent"
+    android:orientation="vertical"		// 垂直方向上布局
+    android:background="#d8e0e8">		// 设置背景颜色
+    <androidx.recyclerview.widget.RecyclerView		// 滚动控件
+        android:id="@+id/recycler_view"
+                                               
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />		// 除下面的部分之外的都是它的部分
+    <LinearLayout
+        android:layout_width="match_parent"			// 宽度占满
+        android:layout_height="wrap_content" >		// 长度包住内容即可
+        <EditText
+            android:id="@+id/edit_text"
+
+            android:layout_width="0dp"			// 除下面的部分之外都是它的部分
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+
+            android:hint="type somthing here"
+            android:maxLines="2"/>
+        <Button
+            android:id="@+id/button"
+
+            android:layout_width="wrap_content"		// 包住内容即可
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+
+            android:text="send"
+            android:textAllCaps="false"/>
+    </LinearLayout>
+</LinearLayout>
+```
+
+理解：大致就是分为两部分：上部分（大部分）是聊天内容框 + 下部分是输入部分（输入框 + 按钮）
+
+3. `msg_item.xml`表示每个对话的布局
+
+```xml
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="10dp">
+    <LinearLayout						// 分为左边、右边布局
+        android:id="@+id/left_layout"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="left"			// 左边布局所以靠左边
+        android:background="@mipmap/message_left">		// 设置对话框背景
+        <TextView							// 里面填充内容
+            android:id="@+id/left_msg"		
+
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"		// 且内容跟框有边界
+            android:layout_gravity="center"		// 内容需要在框中居中
+
+            android:textColor="#fff" />			
+    </LinearLayout>
+    <LinearLayout					// 右边同左边
+        android:id="@+id/right_layout"
+
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="right"
+        android:background="@mipmap/message_right">
+        <TextView
+            android:id="@+id/right_msg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:layout_gravity="center" />
+    </LinearLayout>
+</LinearLayout>
+```
+
+所以，配置中左、右两边都是存在的——只要稍后在代码中根据消息的类型来决定隐藏和显示哪种消息就可以了。
+
+4. `MsgAdapter.java`重构适配器
+
+```java
+public class MsgAdapter extends RecyclerView.Adapter<MsgAdapter.ViewHolder> {
+    private List<Msg> msgList;
+    static class ViewHolder extends RecyclerView.ViewHolder{	// 内部类
+        LinearLayout leftLayout;		// 实例变量——左侧布局
+        LinearLayout rightLayout;		// 右侧布局
+        TextView leftMsg;			// 左侧内容
+        TextView rightMsg;			// 右侧内容
+        public ViewHolder(View view){
+            super(view);
+            leftLayout = (LinearLayout) view.findViewById(R.id.left_layout);// 通过传入的view获取4个布局/控件
+            rightLayout = (LinearLayout) view.findViewById(R.id.right_layout);
+            leftMsg = (TextView) view.findViewById(R.id.left_msg);
+            rightMsg = (TextView) view.findViewById(R.id.right_msg);
+        }
+    }
+    public MsgAdapter(List<Msg> msgList){
+        this.msgList = msgList;
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {	// 和前面一样
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.msg_item, parent, false);
+        return new ViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {	// 不一样的地方
+        Msg msg = msgList.get(position);		// 根据position取获得当前的msg
+        if(msg.getType() == Msg.TYPE_RECVED){		// 判断当前msg的类型是收到，那么右侧的需要隐藏
+            holder.leftLayout.setVisibility(View.VISIBLE);
+            holder.rightLayout.setVisibility(View.GONE);
+            holder.leftMsg.setText(msg.getContent());		// 设置左侧的内容
+        }
+        else if(msg.getType() == Msg.TYPE_SENT){		// 如果当前的msg类型是发送，那么左侧的需要隐藏
+            holder.leftLayout.setVisibility(View.GONE);
+            holder.rightLayout.setVisibility(View.VISIBLE);
+            holder.rightMsg.setText(msg.getContent());
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        return msgList.size();
+    }
+}
+```
+
+5. `MainAcitity`
+
+```java
+public class MainActivity extends AppCompatActivity {
+    private List<Msg> msgList = new ArrayList<>();
+    private EditText editText;
+    private Button send;
+    private RecyclerView recyclerView;
+    private MsgAdapter msgAdapter;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        initMsg();
+        editText = (EditText) findViewById(R.id.edit_text);  // 主要是输入用的
+        send = (Button) findViewById(R.id.button);		// 主要是输入发送用的
+        recyclerView = (RecyclerView) findViewById(R.id.recycler_view);
+        LinearLayoutManager layoutManager = new LinearLayoutManager(this);
+        recyclerView.setLayoutManager(layoutManager);
+        msgAdapter = new MsgAdapter(msgList);
+        recyclerView.setAdapter(msgAdapter);
+        send.setOnClickListener(new View.OnClickListener() {	// 设置按钮响应
+            @Override
+            public void onClick(View v) {
+                String s = editText.getText().toString();	// 获得输入的内容
+                if(!"".equals(s)){			// 如果输入的内容存在那么将它整理成msg对象，放到队列中去
+                    Msg msg = new Msg(s, Msg.TYPE_SENT);
+                    msgList.add(msg);
+                    msgAdapter.notifyItemChanged(msgList.size());	// 有更新，提示更新
+                    recyclerView.scrollToPosition(msgList.size() - 1);		// 定位到最后一行
+                    editText.setText("");		// 清空输入框
+                }
+            }
+        });
+    }
+    private void initMsg(){		// 初始化一些信息，即创建几个msg对象
+        Msg msg1 = new Msg("hello", Msg.TYPE_RECVED);
+        msgList.add(msg1);
+        Msg msg2 = new Msg("hi", Msg.TYPE_SENT);
+        msgList.add(msg2);
+        Msg msg3 = new Msg("who is that", Msg.TYPE_SENT);
+        msgList.add(msg3);
+        Msg msg4 = new Msg("Tom, who are you", Msg.TYPE_RECVED);
+        msgList.add(msg4);
+    }
+}
+```
+
+这边新的内容是`msgAdapter.notifyItemChanged(msgList.size())`——这个是提示更新，然后recyclerView就会去更新。
+
+然后使用`recyclerView.scrollToPosition(msgList.size()-1)`显式的数据定位到最后一行，那么最新发出的消息一定能被看到：
+
+<img src="pic\image-20210208235154622.png" alt="image-20210208235154622" style="zoom:50%;" />
+
+``
+
+
+
+
+
+
+
+
+
+
+
+
+
