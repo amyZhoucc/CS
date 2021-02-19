@@ -165,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
 
 运行后发现，重新加载的程序会去加载文件，如果内容存在就加载到页面上：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216165739672.png" alt="image-20210216165739672" style="zoom:67%;" />
+<img src="pic\image-20210216165739672.png" alt="image-20210216165739672" style="zoom:67%;" />
 
 
 
@@ -248,11 +248,11 @@ protected void onCreate(Bundle savedInstanceState) {
 
 然后能够在：ADM中看到：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216184057806.png" alt="image-20210216184057806" style="zoom:50%;" />
+<img src="pic\image-20210216184057806.png" alt="image-20210216184057806" style="zoom:50%;" />
 
 拉到电脑上，是xml文件，打开看内容：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216184144346.png" alt="image-20210216184144346" style="zoom: 67%;" />
+<img src="pic\image-20210216184144346.png" alt="image-20210216184144346" style="zoom: 67%;" />
 
 和输入的对应。
 
@@ -262,7 +262,7 @@ protected void onCreate(Bundle savedInstanceState) {
 SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
 ```
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216184324178.png" alt="image-20210216184324178" style="zoom:67%;" />
+<img src="pic\image-20210216184324178.png" alt="image-20210216184324178" style="zoom:67%;" />
 
 用第三种方法创建的`SharedPreferences`对象，文件是前缀包名
 
@@ -270,7 +270,7 @@ SharedPreferences.Editor editor = getPreferences(Context.MODE_PRIVATE).edit();
 SharedPreferences.Editor editor = PreferenceManager.getDefaultSharedPreferences(MainActivity.this).edit();
 ```
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216184614507.png" alt="image-20210216184614507" style="zoom:67%;" />
+<img src="pic\image-20210216184614507.png" alt="image-20210216184614507" style="zoom:67%;" />
 
 其余步骤都是一样的
 
@@ -535,29 +535,29 @@ public class MainActivity extends AppCompatActivity {
 
 打开命令行，输入：**`adb shell`**
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216212612379.png" alt="image-20210216212612379" style="zoom:50%;" />
+<img src="pic\image-20210216212612379.png" alt="image-20210216212612379" style="zoom:50%;" />
 
 （#符号是超级管理员的意思，也就是说现在你可以访问模拟器中的一切数据。如果你的命令行上显示的是$符号，那么就表示你现在是普遍管理员，需输入su命令切换成超级管理员，才能执行下面的操作）
 
 使用cd命令进入到/data/data/com.example.storetech/databases/目录下，并使用ls命令查看到该目录里的文件：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216212750853.png" alt="image-20210216212750853" style="zoom:67%;" />
+<img src="pic\image-20210216212750853.png" alt="image-20210216212750853" style="zoom:67%;" />
 
 （**Book. db-journal则是为了让数据库能够支持事务而产生的临时日志文件**，通常情况下这个文件的大小都是0字节）
 
 借助sqlite命令来打开数据库了，只需要键入**`sqlite3`**，后面加上数据库名即可：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216213124546.png" alt="image-20210216213124546" style="zoom:67%;" />
+<img src="pic\image-20210216213124546.png" alt="image-20210216213124546" style="zoom:67%;" />
 
 打开数据库之后，可以用**`.table`**看现在存在的表有哪些：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216213211218.png" alt="image-20210216213211218" style="zoom:67%;" />
+<img src="pic\image-20210216213211218.png" alt="image-20210216213211218" style="zoom:67%;" />
 
 android_metadata表是每个数据库中都会自动生成的，不用管它
 
 可以通过**`.schema`**看每个表的建表语句：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216213304191.png" alt="image-20210216213304191" style="zoom:67%;" />
+<img src="pic\image-20210216213304191.png" alt="image-20210216213304191" style="zoom:67%;" />
 
 ——到这步，能确认表已经创建成功了
 
@@ -610,7 +610,9 @@ public class MyDatabaseHelper extends SQLiteOpenHelper {
 
 如下，就是创建成功的内容：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216215233306.png" alt="image-20210216215233306" style="zoom:67%;" />
+<img src="pic\image-20210216215233306.png" alt="image-20210216215233306" style="zoom:67%;" />
+
+drop是很暴力的方式，导致更新一次数据库必须要将之前的数据全部丢掉了，可以用比较复杂的方式来实现安全的升级（随着版本越多越难维护），具体[见](https://blog.csdn.net/guolin_blog/article/details/39151617)
 
 ### 3.1.3 添加数据（create）
 
@@ -662,9 +664,7 @@ add.setOnClickListener(new View.OnClickListener() {
 
 运行之后，查询数据库可以发现，增加了两条：`select * from Book;`（如果点击多次按钮，那么会有2n条数据）
 
-
-
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216231419598.png" alt="image-20210216231419598" style="zoom:80%;" />
+<img src="pic\image-20210216231419598.png" alt="image-20210216231419598" style="zoom:80%;" />
 
 
 
@@ -697,9 +697,7 @@ update.setOnClickListener(new View.OnClickListener() {
 
 运行之后，发现确实发生修改：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216233735612.png" alt="image-20210216233735612" style="zoom:80%;" />
-
-### 
+<img src="pic\image-20210216233735612.png" alt="image-20210216233735612" style="zoom:80%;" />
 
 ### 3.1.5 查询数据（retrieve）⭐
 
@@ -722,7 +720,34 @@ SQLiteDatabase提供了一个**`query()`**方法用于对数据进行查询，�
 
 调用query()方法后会返回一个**Cursor对象**，查询到的所有数据都将从这个对象中取出。
 
+```java
+Button query = (Button) findViewById(R.id.query);
+query.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        SQLiteDatabase db = dbHepler.getWritableDatabase();
+        Cursor cursor = db.query("Book", null, null, null, null, null, null);
+        if(cursor.moveToFirst()){
+            do{
+                String author = cursor.getString(cursor.getColumnIndex("author"));
+                double price = cursor.getDouble(cursor.getColumnIndex("price"));
+                int page = cursor.getInt(cursor.getColumnIndex("page"));
+                Log.d("MainActivity", "book author is: " + author);
+                Log.d("MainActivity", "book price is: "+ price);
+                Log.d("MainActivity", "book page is: " + page);
+            }while(cursor.moveToNext());
+        }
+        cursor.close();
+    }
+});
+```
 
+理解：这边实际上是将Book表中所有的数据都取出了
+
+1. `cursor.moveToFirst()`：是将数据的指针移动到第一行的位置
+2. 进入了一个循环当中，去遍历查询到的每一行数据，每读取完一行就向后移动`cursor.moveToNext();`
+3. 通过`cursor.getColumnIndex("key")`来获取每一列在表中的位置索引，然后传入到`cursor.getString()/getInt()`等，就可以获取数据
+4. 最后需要将cursor关闭：`cursor.close()`
 
 ### 3.1.6 删除数据（delete）
 
@@ -746,15 +771,427 @@ delete.setOnClickListener(new View.OnClickListener() {
 
 运行后发现，作者是"moyan"的条目都被删除了
 
-![image-20210216234143172](C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210216234143172.png)
+<img src="pic\image-20210216234143172.png" style="zoom:67%;"  >
 
 ### 3.1.7 使用SQL语句操作数据库
 
+Android允许直接通过SQL来操作数据库。
 
+增：
+
+```sql
+db.execSQL("insert into Book(author, price, page) values(?, ?, ?)", new String[]{"moyan", "45", "320"});
+```
+
+更：
+
+```sql
+db.execSQL("update Book set price = ? where author = ?", new String[]{"10.99", "moyan"});
+```
+
+删：
+
+```sql
+db.execSQL("delete from Book where autor = ?", new String[]{"moyan"});
+```
+
+查：
+
+```sql
+db.rawQuery("select * from Book", null);
+```
+
+查询数据调用的是`db.rawQuery`，其余均调用的是`db.execSQL()`
 
 ## 3.2 LitePal操作数据库
 
+LitePal是一款开源的Android数据库框架，它采用了**对象关系映射（ORM）的模式**，并将平时开发最常用到的一些数据库功能进行了封装，使得不用编写一行SQL语句就可以完成各种建表和増删改查的操作。
 
+最新的LitePal更新到了3.2.3（截至2021.2.17）
+
+- 3.2的重大更新是能够支持索引（二分查找，但是对于数据量较少的移动设备不是很明显的增加，但是至少和服务器的数据库对应了）
+
+- 3.1.1的重大更新是事务接口的支持
+
+- 3.0，对Java版本和kotlin版本进行合并，所以dependencies中的语法变了
+
+  ```groovy
+  implementation 'org.litepal.guolindev:core:3.1.1'
+  ```
+
+- 2.0的重大更新是，重构，几乎所有API接口都变化了，提示被废弃了但是还是可以使用的，具体[见](https://guolin.blog.csdn.net/article/details/80586028)
+
+（由于版本更新较快，一些写法也都变化了，虽然作者说都是向下兼容的，但是如果有变化就选择最新的使用方式）
+
+### 3.2.1 配置LitePal
+
+书上的配置方法已经过时了，所以查看了作者的blog，来进行配置
+
+1. 添加依赖：修改之后，记得点击sync now
+
+```groovy
+// app/build.gradle
+dependencies {
+	....
+    implementation 'org.litepal.guolindev:core:3.1.1'		// 添加库，不是最新的库
+}
+```
+
+2. 配置litepal.xml文件
+
+   需要创建一个新的文件，首先创建文件夹`app/src/main`目录下面，创建一个新的文件夹**`assets`**（不能是其他名字，否则识别不出来的），和java、res是同一级下面
+
+   然后创建文件`litepal.xml`文件
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<litepal>
+    <dbname value="BookStore"></dbname>
+    <version value="1"></version>
+    <list>
+    </list>
+</litepal>
+```
+
+理解：
+
+1. `<dbname>`是用来指定数据库名的
+2. `<version>`指定数据库版本号
+3. `<list>`指定所有的映射模型
+
+```xml
+// AndroidManifest.xml
+<application
+        android:name="org.litepal.LitePalApplication"  
+        ...
+        android:theme="@style/Theme.StoreTech">
+        ...
+    </application>
+```
+
+这里将项目的application配置为org.litepal.LitePalApplication，那么能保证所有的数据库操作就都不用再传Context了（因为操作数据库需要用到Context）
+
+有些程序可能会有自己的Application，并在这里配置过了，即`android:name="com.example.myApplcation"`类似的，那么可以修改一下继承结构：让它不要直接继承Application类，而是继承LitePalApplication类，就可以使用一切都能正常工作了
+
+还有些程序需要继承另外一个AnotherApplication，并且这个AnotherApplication还是在jar包当中的，不能修改它的代码。可以把LitePal的源码下载下来，然后把src目录下的所有代码直接拷贝到你项目的src目录下面，接着打开LitePalApplication类，将它的继承结构改成继承自AnotherApplication，再让MyApplication继承自LitePalApplication，这样所有的Application就都可以在一起正常工作了。具体[见](https://blog.csdn.net/guolin_blog/article/details/38556989)
+
+至此配置完成
+
+### 3.2.2 创建和升级数据库
+
+LitePal采取的是对象关系映射（ORM）的模式。
+
+理解：Java是面向对象语言，而使用的数据库则是关系型数据库，那么将面向对象的语言和面向关系的数据库之间建立一种映射关系，这就是对象关系映射了。
+
+——LitePal，能够让我们用面向对象的思想操作数据库
+
+在ORM中，每一张表都应该对应一个模型(Model)，那么创建一个类，而该类就会对应一个数据表
+
+```java
+public class Book {
+    private int id;
+    private String name;
+    private String author;
+    private double price;
+    private int pages;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+	....(同上)
+}
+```
+
+理解：id这个字段可写可不写，即使不写这个字段，LitePal也会在表中自动生成一个id列
+
+关于数据类型：可以进行对象关系映射的数据类型一共有8种，**int、short、long、float、double、boolean、String和Date**，只要是声明成这8种数据类型的字段都会被自动映射到数据库表中，并不需要进行任何额外的配置。
+
+该Book类就会对应数据库中的一张表
+
+将Book类添加到映射模型中，
+
+```xml
+<litepal>
+    <dbname value="BookStore"></dbname>
+    <version value="1"></version>
+    <list>
+        <mapping class="com.example.storetech.Book"></mapping>
+    </list>
+</litepal>
+```
+
+理解：`<mapping></mapping>`就是来声明要映射的模型类，class中指定类名——**需要使用完整的类名**
+
+```java
+protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+    setContentView(R.layout.activity_main);
+    Button create = findViewById(R.id.build);
+    create.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            LitePal.getDatabase();
+        }
+    });
+}
+```
+
+理解：调用**`LitePal.getDatabase()`**方法就是一次最简单的数据库操作
+
+——同前面的`dbHelper.getWritableDatabase/getReadableDatabase`，即数据库如果存在就直接获取该对象了SQLiteDatabase对象，如果不存在就按照配置建库，如果要建表那么建表
+
+运行之后发现：
+
+<img src="pic\image-20210217115049436.png" alt="image-20210217115049436" style="zoom: 67%;" />
+
+（android_metadata表不用管，table_schema表是LitePal内部使用的）
+
+并且查看建表语句：`.schema`
+
+<img src="pic\image-20210217115131743.png" alt="image-20210217115131743" style="zoom: 67%;" />
+
+SQLiteOpenHelper来升级数据库的方式，之前是将所有要重复的数据表全部drop了，这在实际中存在很严重的问题——每次升级数据库，里面的数据都被清空了。当然也不用一定要drop，但是维护起来麻烦。
+
+而LitePal的升级方法很简单：——**需要改任何需要改的内容，然后将版本号加1就行了。**
+
+```xml
+<litepal>
+    <dbname value="BookStore"></dbname>
+    <version value="2"></version>			// 版本+1
+    <list>
+        <mapping class="com.example.storetech.Book"></mapping>		// 里面增加了press列，Java代码中增加了
+        <mapping class="com.example.storetech.Category"></mapping>	// 新增了一个模型
+    </list>
+</litepal>
+```
+
+只需要修改版本号，就会自动更新里面变化的内容
+
+<img src="pic\image-20210217115815159.png" alt="image-20210217115815159" style="zoom:67%;" />
+
+<img src="pic\image-20210217115905886.png" alt="image-20210217115905886" style="zoom:67%;" />
+
+可以看到表增加了一张，旧的表也新增了一列
+
+而对于删除某一列：SQLite是不支持删除列的命令的。而使用LitePal，只需要在对应的模型类中把它删除掉，然后将版本号加1，下次操作数据库的时候这个列就会不见了——底层实现，LitePal并没有删除任何一列，它只是先将原表重命名成一个临时表，然后根据最新的类的结构生成一个新的表，再把临时表中除了该列之外的数据复制到新的表中，最后把临时表删掉，那么就做了一个全局替换。
+
+而想删除某一张表的话，直接在litepal.xml中的映射列表中将相应的类删除，表自然也就不存在了
+
+——比之前简便很多
+
+### 3.2.3 用LitePal添加数据
+
+添加的流程：只需要创建出模型类的**实例**，再将所有要存储的**数据设置好**，最后调用一下**save()**方法就可以了。
+
+前面创建模型，可以发现都是单独类，即没有继承，但是**如果想进行CRUD，必须要继承`LitePalSupport`**
+
+所以，先在对应的Book类中添加继承关系
+
+```java
+Button newItem = (Button) findViewById(R.id.add);
+newItem.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Book book = new Book();		// 创建实例对象
+        book.setName("yetangyuese");		// 设置数据
+        book.setAuthor("zhuziqing");
+        book.setPrice(20.2);
+        book.setPages(200);
+        book.setPress("null");
+        book.save();			// save一下
+    }
+});
+```
+
+理解：步骤：创建实例对象 -> 设置数据值（如果不设置，则默认没有，LitePal会按照数据类型默认给值）-> `实例对象.save()`
+
+这样一条数据就写入数据库了
+
+运行之后的结果：
+
+<img src="pic\image-20210217122057085.png" alt="image-20210217122057085" style="zoom:67%;" />
+
+save()也是存在返回值的，返回的是布尔值，true表示成功，false表示操作失败，但是不会抛出异常
+
+### 3.2.4 用LitePal更新数据
+
+最简单的更新方法：对已存储的对象重新设值，然后重新调用save()方法
+
+而如何判断已存储：调用**`model.isSaved()`**，true表示存储（调用model.save()方法添加过数据了；通过LitePal提供的查询API查出来的，存在在数据库中，可能不通过LitePal存储的，or外部数据库的），false表示未存储
+
+```java
+Button update = (Button) findViewById(R.id.update);
+update.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Book book = new Book();
+        book.setName("yetangyuese");
+        book.setAuthor("zhuziqing");
+        book.setPrice(10.99);
+        book.setPages(200);
+        book.setPress("null");
+        book.save();
+        book.setPages(199);
+        book.save();
+    }
+});
+```
+
+LitePal会发现当前的Book对象是已存储的，因此不会再向数据库中去添加一条新数据，而是会直接更新当前的数据
+
+但是，这个**需要获取对应的book对象**，会自动去调用book.isSaved()，判断该对象是否是已存储，如果是已存储，那么就只修改不增加。
+
+——限制性比较大
+
+更加灵巧的更新方法：
+
+```java
+Button update = (Button) findViewById(R.id.update);
+update.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        Book book = new Book();
+        book.setPages(100);
+        book.updateAll("author= ? and price = ?", "long", "39.99");
+    }
+});
+```
+
+理解：可以看到，先创建一个实例对象，并将要修改的数据设置好，调用**`book.updateAll()`**方法，去修改数据，如果`updateAll()`没有任何限制的话，那么就是更新全部数据，而限制的语法和前面类似：第一个参数就是定位+占位符，之后的参数就是明确占位符的内容。`updateAll()`方法的参数是一个`String... conditions`，所以长度不限
+
+运行后发现，的确发生了修改：
+
+<img src="pic\image-20210217140133688.png" alt="image-20210217140133688" style="zoom: 67%;" />
+
+需要注意：
+
+如果**想把一个字段的值更新成默认值时，不能直接通过set设置**，之后用updateAll更新，因为java中每个参数都有默认值，而你如果再设置默认值是不会发生更新的
+
+对于所有想要将为数据更新成默认值的操作，LitePal统一提供了一个**`setToDefault()`方法**，然后传入相应的列名就可以实现了
+
+eg：
+
+```
+Book book = new Book();
+book.setToDefault("page");		// 不能用setPage(0)
+book.updateAll();
+```
+
+### 3.2.5 用LitePal删除数据
+
+也是有两种方法：
+
+简单：调用`book.delete()`对已存储的对象进行删除，缺点同上，需要获取对应的book对象，才能删除，限制比较大
+
+灵活方法：
+
+```java
+Button delete = (Button) findViewById(R.id.delete);
+delete.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        LitePal.deleteAll(Book.class, "price < ?", "15");
+    }
+});
+```
+
+理解：调用的是静态方法：`LitePal.deleteAll()`方法，需要至少1个参数：
+
+- 第一个参数，指定删除哪张表中的数据，传递的是类
+- 指定约束条件
+
+<img src="pic\image-20210217141410358.png" alt="image-20210217141410358" style="zoom:67%;" />
+
+如果deleteAll不做任何限制，那么就是删除该表中的全部数据
+
+### 3.2.6 用LitePal查询数据
+
+使用静态方法：`findAll()`，至少要一个参数，指定要查询的表，还可以传递一些限制
+
+返回值是List对象
+
+```java
+Button query = (Button) findViewById(R.id.query);
+query.setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
+        List<Book> list = LitePal.findAll(Book.class);		// 表示查表中的所有数据
+        for(Book book:list){
+            Log.d("main", "name is: " + book.getName());
+            Log.d("main", "author is: " + book.getAuthor());
+            Log.d("main", "price is: " + book.getPrice());
+            Log.d("main", "page is: " + book.getPages());
+            Log.d("main", "page is: " + book.getPress());
+        }
+    }
+});
+```
+
+这是最简单的用法，还可以进行一定的扩展：
+
+- findFirst/findLast
+
+  ```
+  Book book = LitePal.findFirst(Book.class);
+  ```
+
+  ——可以得到表中的第一条数据，注意返回值不再是List，而是实例对象
+
+  同理，还有**`findLast()`**
+
+- select()：指定查询哪几列的数据
+
+  ```java
+  List<Book> list = LitePal.select("name","author").find(Book.class);
+  ```
+
+  只查询name、author这两列数据，而如果还是要获取其他列的，那只能给默认值
+
+  <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210217143431878.png" alt="image-20210217143431878" style="zoom: 67%;" />
+
+- where()：指定查询的约束条件
+
+  ```java
+  List<Book> list = LitePal.where("pages > ?", "200").find(Book.class);
+  ```
+
+  那么只查询，pages>200的条目
+
+- order()：指定结果的排序方式
+
+  ```java
+  List<Book> list = LitePal.order("pages desc").find(Book.class);
+  ```
+
+  其中desc表示降序排列，asc或者不写表示升序排列。
+
+- limit()：限制查询结果的数量，eg：只查表中的前3条数据，
+
+  ```java
+  List<Book> list = LitePal.limit(2).find(Book.class);
+  ```
+
+  只返回前面的2条数据
+
+- offset()：指定查询结果的偏移量，一般和前面配合使用
+
+  ```java
+  List<Book> list = LitePal.limit(2).offset(1).find(Book.class);
+  ```
+
+  只返回前面的第2条数据，第3条数据
+
+并且可以对这些方法任意组合，有需要就添加限制，没需要就不用写——增加灵活性
+
+当然，还是支持原生的SQL指令的：`findBySQL(xxxx)`
+
+```java
+Cursor cursor = LitePal.findBySQL("select * from Book where pages > ? and price < ?", "400", "40");
+```
 
 
 
