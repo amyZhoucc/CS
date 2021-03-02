@@ -48,206 +48,6 @@ java xxx.class		// 最简单模式
 
 
 
-# 1. Java的私有构造函数
-
-<a name="1"></a>
-
-我们接触到的构造函数的权限修饰符都是public，比如，
-```Java
-public class Test {
-    public Test() {
-    ...
-    }
-}
-```
-构造函数的用途是创建一个类的实例。比如，
-```Java
-Test instance = new Test();
-```
-
-既然有public修饰符，那么private修饰符也能够作为构造函数的修饰符——那么构造函数就变成私有构造函数了。
-而priavte的作用就是：只能在定义的类内部使用，而无法在其他类中使用，对于构造函数来说，那么**该类就无法在其他类中实例化了，对应的就无法在其他类中使用实例变量和实例方法了**。
-存在即合理，那么私有构造函数的作用是什么呢？
-
-## 1. 防止实例化
-
-虽然某个类使用了私有构造函数（那么Java就不会自动生成默认构造函数），一定不能在其他类实例化该类，而**有些类就不能让其他类实例化自己**，比如Java的工具类，不希望被实例化，被用户滥用。而是希望静态访问其类变量和类函数，所以其构造函数就是私有的
-```Java
-public final class Math {
-
-    /**
-     * Don't let anyone instantiate this class.——不让实例化该类
-     */
-    private Math() {}
-}
-```
-
-## 2. 单例模式
-
-即类的对象有且只能有一个——单个实例
-（单例模式，这是最初级的设计模式之一）
-```Java
-public class Singleton {
-
-    private static Singleton instance;  // 一个私有的类变量，外部类不能访问
-    
-    private int x;      // 创建两个私有的实例变量
-    private int y;
-    
-    private Singleton() {
-        this.x = 1;
-        this.y = 2;
-    }
-
-    public static Singleton getInstance() {
-        if (instance == null)       // 如果已经调用过了，那么就直接返回
-            instance = new Singleton(); // 调用私有方法
-        return instance;
-    }
-}
-```
-单例模式主要有3个特点，
-1. 类的内部有一个类的实例，并且为static类型（类变量，但是在未调用方法之前是未初始化的）
-2. 构造函数为私有——外部类不能调用
-3. 通过提供一个获取实例的方法，比如getInstance，该方法也为static类型（类方法）
-调用的时候，我们可以通过
-```Java
-Singleton instance = Singleton.getInstance();
-```
-来得到其实例化，而且每次调用，都是使用同一个实例
-
-为什么要用单例模式呢？ 因为很多时候，我们只需要一个对象就可以了，不希望用户来构造对象，比如线程池，驱动，显示器等。如果把构造函数私有，那么所有程序在调用时，只会有同一个实例变量，不容易带来混乱。
-
-## 3. 被其他构造函数调用
-
-它只是作为中间函数，用来减少重复代码，用来被其他构造函数调用的，而不希望用户直接调用该构造函数（可能该构造函数还不是很完善等等）
-
-
-
-# 2. protected关键词的理解
-
-<a name="2"></a>
-
-书上，将关于**protected**很简单：它的访问权限比default大一些，不仅能对包内类可见，还对子类可见。这边做一个详细的解释
-
-1. 当在和protected关键字修饰的成员同一个包内，通过实例化，然后对象名.成员名就能够进行访问（同defalut，同包内均可见）
-
-2. 当不在同一个包内，只有继承了该类（类中包含protected成员）称为其子类，才能使用**子类继承到的protected成员，且只能在子类中使用**，但是**不能访问其父类的成员**，eg: super.xxx(编译不通过)；在子类中建一个父类对象，然后调用protected成员（编译不通过） 
-
-   （原因是，从父类继承，子类就可以**获得了父类方法的地址信息并把这些信息保存到自己的方法区**，这样就可以通过子类对象访问自己的方法区从而间接的访问父类的方法， 继承产生了自己能访问的方法表包括父类的保护区域（实例方法），并**无权限访问父类对象的方法表中保护区域**，就是只能通过自己的对象去访问自己的方法表中保护区域来调用已继承的方法）
-
-场景1：
-
-```java
-// 同包内
-// 前提clone是java.lang.Object的protected方法——该方法能在同包的java.lang和子类访问
-class MyObject{}    // 默认继承了java.lang.Object
-
-public class Test{  // 默认继承了java.lang.Object
-    public static void main(String[] args){
-        MyObject obj = new MyObject();
-        obj.clone();    // compile error
-    }
-}
-```
-编译错误的原因：虽然MyObject和Test都是继承自同一个类的子类，但是不能在一个子类中访问另一个子类的protected方法。
-$\because$ Object和Test不在同一个类中（不符合条件1），而Test里面调用的是MyObject的clone方法（不符合条件2，如果Test是调用自己继承的方法，那就是可行的）
-
-场景2：
-
-```java
-// 同包内：
-public class MyObject {
-    protected Object clone() throws CloneNotSupportedException{	// 重写了父类的方法
-        return super.clone();
-    }
-}
-
-public class Test{		// 和上面的非继承关系，都是默认继承java.lang.Object
-    public static void main(String[] args) throws CloneNotSupportedException{
-        MyObject obj = new MyObject();
-        obj.clone();		// compile OK
-    }
-}
-```
-
-编译通过的原因：**MyObject重写了clone的方法——原方法被覆盖了**，那么Test和MyObject在同包内（符合条件1），那么可以Test可以通过创建对象然后调用
-
-场景3：
-
-```java
-// 异包内
-public class MyObject {			// 父类
-    protected Object clone() throws CloneNotSupportedException{	// 重写了父类的方法
-        return super.clone();
-    }
-}
-
-public class Test extends MyObject{		// 子类
-    public static void main(String[] args) throws CloneNotSupportedException{
-        MyObject obj = new MyObject();
-        obj.clone();			// compile Error
-        Test test = new Test();
-        Test.clone();		// compile OK
-    }
-}
-```
-
-两个文件是异包，所以不符合条件1；但是存在继承关系，第一个clone错误的原因是：子类不能在异包的条件去访问父类的clone函数；但是子类可以访问自己继承到的clone方法，所以第二个通过
-
-ps：clone用来复制对象，是分配一个和源对象一样的大小空间，然后在该空间内**创建一个新的对象**。（和单纯的赋值是不一样的，只是创建了一个新的引用对象，然后引用的内容都是同地址的）——**clone是浅拷贝**：创建一个新对象，如果属性是基本类型，那么拷贝基础类型的值；如果是引用类型，那么**拷贝的就是内存地址**
-
-clone是在java.lang.Object中实现的，是**protected**修饰的，在其他类对其进行重写的时候能够将其覆盖为**public**
-
-eg： vector覆盖了clone，所以vector能够直接使用clone
-
-重写clone()方法时，通常都有一行代码**super.clone();**——缺省行为，因为首先要把父类中的成员复制到位，然后才是复制自己的成员。
-
-pps：深拷贝会拷贝所有的属性，包括对象和其所引用的对象一起拷贝（不再是拷贝内存地址，而是拷贝其内容）
-
-
-
-# 3. Abstract关键字注意
-
-<a name="3"></a>
-
-分析发现：abstract和private、static、final是不能同时存在的
-
-abstract只能和public、protected一起使用
-
-1. abstract和private
-
-   private是私有的，即只能在类内部使用。而被abstract修饰的方法是需要子类去实现的——所以，修饰为private是无意义的。private类不能被外部；而private不会去修饰类（一个类不能被外部使用，那定义该类还有什么意义呢）
-
-2. abstract和static
-
-   static下的静态方法，静态方法意味着可以直接通过`类名.方法名`使用，而abstract修饰的方法是没有方法体，等待子类去实现的，那么直接调用也没有意义（是个空方法）
-
-3. abstract和final
-
-   final表达的是，该方法不能被重写or继承，而abstract方法就是要被继承和重写才存在实际意义的，所以不符合
-
-4. abstract和public、protected
-
-   后两个都是可见范围修饰符，和abstract没有逻辑上的冲突，所以可以使用
-
-抽象类和接口的区别：
-
-1. 关键字不同，抽象类本质上还是类，所以是`public abstract class XXX`; 接口是`public interface XXX`
-2. 一个类只能继承一个抽象类（准确说是只能继承一个类），但是能实现多个接口
-3. **抽象类可以有构造方法**（用来继承时调用，因为存在实例变量），但是接口中不能有
-4. **抽象类中的抽象方法的访问类型可以是：public、protected**；而接口的抽象方法只能是：public abstract
-5. 抽象类中的静态变量的访问类型可以随意，但是接口中的变量只能是`public static final`（默认即这样）
-6. 抽象类中可以有实例变量，而接口中的变量只能是静态变量
-
-但是都能有：静态变量、静态方法、实例方法（接口中的实例方法是要用关键字`default`修饰的，可以在子类中重写也可以不）
-
-
-
-
-
-
-
 # 4. Java程序的编译和运行（未完待续）
 
 <a name="4"></a>
@@ -452,7 +252,7 @@ public boolean equals(Object obj) {
 
 - 类是私有的（内部私有类）/包级私有（默认default），那么不需要用到equals方法，反而还需要禁止
 
-  ` @Override public boolean equals(Object obj) { throw new AssertionError();} `
+  ` @Override public boolean equals(Object obj) { throw new AssertionError();} `——禁止使用。
 
 $\therefore$总结： 默认情况下是从超类Object继承而来的，equals方法与`==`是完全等价的，比较的都是对象的内存地址，但我们可以重写equals方法，使其按照我们的需求的方式进行比较，如Integer类重写了equals方法，使其比较的是里面的值，而不是内存地址。 
 
@@ -610,32 +410,29 @@ public boolean equals(Object obj) {
 }
 ```
 
-可以发现重写equal还是有很多坑的
+可以发现重写equals还是有很多坑的
 
 有人总结出的重写技巧：
 
-- 首先，**使用==操作符检查“参数是否为这个对象的引用”**：如果是对象本身，则直接返回，拦截了对本身调用的情况，算是一种性能优化；
+1. 首先，**使用==操作符检查“参数是否为这个对象的引用”**：如果是对象本身，则直接返回，拦截了对本身调用的情况，算是一种性能优化；
+2. 判空操作， 如果为null,返回false；
+3. 接着再**使用instanceof操作符检查“参数是否是正确的类型”**：如果不是，就返回false，正如对称性和传递性举例子中说得，不要想着兼容别的类型，很容易出错。在实践中检查的类型多半是equals所在类的类型，或者是该类实现的接口的类型，比如Set、List、Map这些集合接口。
+   - 如果equals的语义在每个子类中有所改变，就使用getClass检测——严格判断类型是否匹配
+   - 如果所有的子类都拥有统一的语义，就使用instanceof检测 ：（eg：父类car与子类bigCar混合比，我们统一了批次相同即相等）
 
-- 判空操作， 如果为null,返回false；
+4. 在类型一致的情况下，**把参数转化为正确的类型**
 
-- 接着再**使用instanceof操作符检查“参数是否是正确的类型”**：如果不是，就返回false，正如对称性和传递性举例子中说得，不要想着兼容别的类型，很容易出错。在实践中检查的类型多半是equals所在类的类型，或者是该类实现的接口的类型，比如Set、List、Map这些集合接口。
+5. **对于该类中的“关键域”，检查参数中的域是否与对象中的对应域相等**：
 
-  - 如果equals的语义在每个子类中有所改变，就使用getClass检测——严格判断类型是否匹配
-  - 如果所有的子类都拥有统一的语义，就使用instanceof检测 ：（eg：父类car与子类bigCar混合比，我们统一了批次相同即相等）
+   - 基本类型的域就用`==`比较，
 
-- 在类型一致的情况下，**把参数转化为正确的类型**
+   - Float用Float.compare方法，Double域用Double.compare方法，
 
-- **对于该类中的“关键域”，检查参数中的域是否与对象中的对应域相等**：
+   - 对象域，一般递归调用它们的equals方法比较。
 
-  - 基本类型的域就用`==`比较，
+     对象域判断的最简单的版本：加上判空检查和对自身引用的检查，一般会写成这样：`(field == o.field || (field != null && field.equals(o.field)))`
 
-  - Float用Float.compare方法，Double域用Double.compare方法，
-
-  - 对象域，一般递归调用它们的equals方法比较。
-
-    对象域判断的最简单的版本：加上判空检查和对自身引用的检查，一般会写成这样：`(field == o.field || (field != null && field.equals(o.field)))`
-
-- **编写完成后思考是否满足上面提到的对称性，传递性，一致性等等**
+6. **编写完成后思考是否满足上面提到的对称性，传递性，一致性等等**
 
 下面是String类中对equals的重写：
 
@@ -644,8 +441,8 @@ public boolean equals(Object obj) {
 	if (this == anObject) {	// 看是否是引用同一个对象，如果是就避免了后面的比较，对应条1
 		return true;
 	}
-	if (anObject instanceof String) {	// 判断参数类型是否为String类型，对应条2
-		String anotherString = (String)anObject;	// 类型转换，对应条3
+	if (anObject instanceof String) {	// 判断参数类型是否为String类型，对应条3
+		String anotherString = (String)anObject;	// 类型转换，对应条4
 		int n = value.length;				
 		if (n == anotherString.value.length) {	// 判断两个字符串长度是否一样
 			char v1[] = value;			// 类中存在一个变量存放的是字符数组
@@ -678,12 +475,14 @@ ps：可以看到在对象类型判断中用到了`instanceof`，该关键字能
 
 hashCode主要是针对映射相关的操作（Map接口）。Map接口的类会使用到键对象的哈希码，当我们调用put方法或者get方法对Map容器进行操作时，都是根据键对象的哈希码来计算存储位置的
 
-hashCode在Object类中声明，默认是返回该对象的内存地址，好的哈希方法应该将实例均匀分布在所有散列值上
+hashCode在Object类中声明，默认是返回该对象的内存地址的hash值，好的哈希方法应该将实例均匀分布在所有散列值上
+
+hashCode()可以重写，所以hashCode()不一定能代表对象在内存的地址，如果想比对内存地址的不同，需要使用`System.identityHashCode(Object)`方法。
 
 规定了：
 
 - **equals返回true（表示同一个对象），那么hashCode也必须返回一样**；
-- 如果equal返回false，那么hashCode尽量不一样
+- equal返回false，那么hashCode尽量不一样
 
 那么既然重写了equals方法，那么hashCode的逻辑也需要修改
 
@@ -1332,3 +1131,6 @@ Object.wait()和Condition.await()的原理比较类似
 参考内容：
 
 https://segmentfault.com/a/1190000020864747?utm_source=sf-related
+
+
+
