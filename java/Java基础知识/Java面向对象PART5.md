@@ -4,13 +4,11 @@
 
 主要介绍常用的几个基础类：包装类、String类、StringBuilder类、Arrays类。它们的常用用法（要记）、实现逻辑
 
-### 1. 包装类
+## 1. 包装类
 
-之前也用到过，Integer、Character等。
+ps：关于源码的分析，都在另一个文档中了
 
-Java的8种基本数据类型，都有分别对应一个包装类
-
-（只需要特别记忆：int-Integer，char-Character，其余都是首字母大写即可）
+Java的8种基本数据类型，都有**分别对应一个包装类**
 
 | 基本数据类型 | 包装类      | 基本数据类型 | 包装类        |
 | ------------ | ----------- | ------------ | ------------- |
@@ -29,7 +27,7 @@ public Integer(int value) {			// 两个构造方法
 	this.value = value;			// ——传递int值
 }
 public Integer(String s) throws NumberFormatException {// ——传递String值，然后转换成int赋值
-	this.value = parseInt(s, 10);
+	this.value = parseInt(s, 10);		// 可能会抛出异常
 }
 ```
 
@@ -37,9 +35,7 @@ why要定义包装类？
 
 $\because$ Java很多方法只能操作对象，为了能够操作基本数据类型，于是就将基本数据类型包装成包装类，然后能够使用这些方法。并且包装类还有很多方法可以来操作数据。
 
-#### （1）基本用法
-
-<a name="valueof_link"></a>
+### （1）基本用法
 
 包装类可以和对应的基本数据类型互相转换
 
@@ -70,9 +66,9 @@ System.out.println(Integer.valueOf(b) == Integer.valueOf(bb));
 >> false
 ```
 
-将基本数据类型转换为包装类的过程——装箱
+**将基本数据类型转换为包装类的过程——装箱**
 
-将包装类转换为基本数据类型的过程——拆箱
+**将包装类转换为基本数据类型的过程——拆箱**
 
 Java5之后引入了自动装箱和拆箱，即直接赋值即可，而不用调用方法（是编译器自动会替换为对应的方法调用）
 
@@ -90,7 +86,7 @@ int b = a;		// 自动拆箱，实际上编译器会将其替换为 int b = a.int
 - new：普通类对象创建方式
 - 调用装箱方法（默认会调用）**valueOf()**——更建议用此种方法，因为new创建，每次都会创建一个新对象。而包装类在**底层实现的过程种都会引入缓存技术**，减少需要创建的对象次数，节省空间提高性能（除了Float和Double）
 
-#### （2）包装类共同点
+### （2）包装类共同点
 
 它们都重写了Object方法，都实现了Comparable接口
 
@@ -98,128 +94,128 @@ int b = a;		// 自动拆箱，实际上编译器会将其替换为 int b = a.int
 public final class Integer extends Number implements Comparable<Integer> {
 ```
 
-1. 重写Object方法
+#### 重写Object超类的方法
 
-   - 重写`equals(Object obj)`方法
+- 重写`equals(Object obj)`方法
 
-     用来判断：当前对象和传入的对象是否相同
+  用来判断：当前对象和传入的对象是否相同
 
-     Object默认是比较地址，只有指向的地址一样才返回true，等同于`==`
+  Object默认是比较地址，只有指向的地址一样才返回true，等同于`==`
 
-     而equals应该反映的是对象之间的逻辑相等关系（即值相等），对于包装类（本质上是代表基本数据类型的，基本数据类型应该是值比较）这样的默认实现是不合理的
+  而equals应该反映的是对象之间的逻辑相等关系（即值相等），对于包装类（本质上是代表基本数据类型的，基本数据类型应该是值比较）这样的默认实现是不合理的
 
-     ——**所有包装类全部重写，比较的是包装类对应的基本类型值**
+  ——**所有包装类全部重写，比较的是包装类对应的基本类型值**
 
-     具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+  具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-     使用：
+  使用：
 
-     ```java
-     Integer b = 400, a = 400;
-     System.out.println(b.equals(a));	// >>true。因为值一样
-     Float f = 0.01f, ff = 0.1f*0.1f;
-     System.out.println(f.equals(ff));	// >>false。因为小数计算存在误差，所以值不相等
-     ```
+  ```java
+  Integer b = 400, a = 400;
+  System.out.println(b.equals(a));	// >>true。因为值一样
+  Float f = 0.01f, ff = 0.1f*0.1f;
+  System.out.println(f.equals(ff));	// >>false。因为小数计算存在误差，所以值不相等
+  ```
 
-   - 重写`hashCode()`方法
+- 重写`hashCode()`方法
 
-     hashCode返回的是一个**对象的哈希值**，int类型，主要是由对象中一般不变的属性映射得到。
+  hashCode返回的是一个**对象的哈希值**，int类型，主要是由对象中一般不变的属性映射得到。
 
-     用处：快速对对象进行区分、分组
+  用处：快速对对象进行区分、分组
 
-     要求：**一个对象的哈希值不能变，相同对象的哈希值必须一样，不同对象的哈希值一般应该不同（不强制不同**，eg：那出生日期作为一个班上学生的hashCode，存在不同对象的哈希值一样的情况，但是问题不大）
+  要求：**一个对象的哈希值不能变，相同对象的哈希值必须一样，不同对象的哈希值一般应该不同（不强制不同**，eg：那出生日期作为一个班上学生的hashCode，存在不同对象的哈希值一样的情况，但是问题不大）
 
-     **hashCode和equals方法密切**，两个对象，如果**equals返回true（表示同一个对象），那么hashCode也必须返回一样**；如果equal返回false，那么hashCode尽量不一样
+  **hashCode和equals方法密切**，两个对象，如果**equals返回true（表示同一个对象），那么hashCode也必须返回一样**；如果equal返回false，那么hashCode尽量不一样
 
-     hashCode的默认实现：将对象的地址转换为整数返回。**子类如果重写了equals方法，那么也必须重写	hashCode**（编译器并不会这么要求，但是从逻辑上是需要的）
+  hashCode的默认实现：将对象的地址转换为整数返回。**子类如果重写了equals方法，那么也必须重写	hashCode**（编译器并不会这么要求，但是从逻辑上是需要的）
 
-     [详见Java的额外知识5](http://note.youdao.com/noteshare?id=9f8ab6eaf048c06b8c823ebe1c7f0b8c&sub=38FCCF96A0C74660A8B19E1140BA449E)
+  [详见包装类源码ps5](http://note.youdao.com/noteshare?id=9f8ab6eaf048c06b8c823ebe1c7f0b8c&sub=38FCCF96A0C74660A8B19E1140BA449E)
 
-     **因为包装类重写了equals方法，将其逻辑修改了（虽然不是同一对象，但是值一样就认为是一样的），那么我们也需要重写hashCode方法**：
+  **因为包装类重写了equals方法，将其逻辑修改了（虽然不是同一对象，但是值一样就认为是一样的），那么我们也需要重写hashCode方法**：
 
-     包装类们是如何实现的：详见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+  包装类们是如何实现的：详见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-   - 重写`toString()`方法——注意这个是实例方法（下面的是静态方法），是用来对该对象的直观文本表示，简要的表达出该对象的信息（一般就是输出对象的某些值等，也会带一定的格式）
+- 重写`toString()`方法——注意这个是实例方法（下面的是静态方法），是用来对该对象的直观文本表示，简要的表达出该对象的信息（一般就是输出对象的某些值等，也会带一定的格式）
 
-     Object类下的方法实现：
+  Object类下的方法实现：
 
-     ```java
-     // 获得该实例对象的类名 @ 该对象的hashCode的十六进制表示
-     public String toString() {
-         return getClass().getName() + "@" + Integer.toHexString(hashCode());
-     }
-     ```
+  ```java
+  // 获得该实例对象的类名 @ 该对象的hashCode的十六进制表示
+  public String toString() {
+      return getClass().getName() + "@" + Integer.toHexString(hashCode());
+  }
+  ```
 
-     其余的见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+  其余的见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-   - String和包装类的互相转换
+- String和包装类的互相转换
 
-     - 根据字符串表示返回基本类型值：parse
+  - 根据字符串表示返回基本类型值：parse
 
-       具体的见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+    具体的见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-     - 根据基本类型值返回字符串表示：toString——注意这个和上面的实例方法`toString`做区分（实例方法的，是为了表达出该对象的一些信息，而本方法只是为了将值转换成字符串输出）
+  - 根据基本类型值返回字符串表示：toString——注意这个和上面的实例方法`toString`做区分（实例方法的，是为了表达出该对象的一些信息，而本方法只是为了将值转换成字符串输出）
 
-       具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+    具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-     并且对于整型，还提供了其他进制的转换：
+  并且对于整型，还提供了其他进制的转换：
 
-     字符串按照其他进制转换成整型；整型转换成指定进制表示的字符串（默认进制是10进制）
+  字符串按照其他进制转换成整型；整型转换成指定进制表示的字符串（默认进制是10进制）
 
-   - 常用常量
+- 常用常量
 
-     具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+  具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-     => 总结：列出了该包装类的二进制下的最大位数`SIZE`和对应的字节数`BYTES`
+  => 总结：列出了该包装类的二进制下的最大位数`SIZE`和对应的字节数`BYTES`
 
-     ​	还列出了该包装类的最大最小值`MIN_VALUE`、`MAX_VALUE`，当数字比较小的时候用十进制表示；当数字比较大的时候，用十六进制表示。Float/Double特殊还列出了正无穷大、负无穷大，NaN数（都是通过计算得到的，而不能直接表达出数字），还列出了e的最大值（因为浮点数是用科学计数法表示的）
+  ​	还列出了该包装类的最大最小值`MIN_VALUE`、`MAX_VALUE`，当数字比较小的时候用十进制表示；当数字比较大的时候，用十六进制表示。Float/Double特殊还列出了正无穷大、负无穷大，NaN数（都是通过计算得到的，而不能直接表达出数字），还列出了e的最大值（因为浮点数是用科学计数法表示的）
 
-   - Number
+- Number
 
-     具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+  具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-     包装类都继承自该父类（除了Boolean），而Number定义了6个抽象方法——将当前的对象值输出为6种基本数据类型格式，要求每个包装类均实现，那么**包装类实例之间可以返回任意的基本数据类型**
+  包装类都继承自该父类（除了Boolean），而Number定义了6个抽象方法——将当前的对象值输出为6种基本数据类型格式，要求每个包装类均实现，那么**包装类实例之间可以返回任意的基本数据类型**
 
-2. 实现Comparable接口
+#### 实现Comparable接口
 
-   所有包装类均实现了接口Comparable的功能：
+所有包装类均实现了接口Comparable的功能：
 
-   原始的Comparable接口的定义：——只有一个`compareTo`方法
+原始的Comparable接口的定义：——只有一个`compareTo`方法
 
-   限定返回值是：-1：当前值 < 其他值；0：当前值 = 其他值；1：当前值 > 其他值
+限定返回值是：-1：当前值 < 其他值；0：当前值 = 其他值；1：当前值 > 其他值
 
-   ```java
-   // Comparable接口：主要就是一个方法
-   public interface Comparable<T> {
-   	public int compareTo(T o);
-   }
-   ```
+```java
+// Comparable接口：主要就是一个方法
+public interface Comparable<T> {
+	public int compareTo(T o);
+}
+```
 
-   <T>是泛型语法，T表示比较的类型，由实现的接口传入指定类型
+<T>是泛型语法，T表示比较的类型，由实现的接口传入指定类型
 
-   包装类的`compareTo`的实现：
+包装类的`compareTo`的实现：
 
-   具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-   浮点数同样存在计算误差问题，导致0.01和0.1*0.1的结果并不相等（和equals一样）
+浮点数同样存在计算误差问题，导致0.01和0.1*0.1的结果并不相等（和equals一样）
 
-3. **不可变性**
+#### 包装类对象有不可变性
 
-   <a name="immutability"></a>
+<a name="immutability"></a>
 
-   实例对象一旦创建，里面的值不可变了。
+**实例对象一旦创建，里面的值不可变了。**
 
-   具体实现在：
+具体实现在：
 
-   - 所有包装类都是final，表示该类不可被继承
-   - 内部的基本数据类型是private的，且声明为final——即只能赋值一次，且不能通过直接访问的方式修改，eg：a.value（不可行）
-   - 没有定义setter方法，不能通过调用方法的方式修改值
+- 所有包装类都是final，表示该类不可被继承
+- 内部的基本数据类型是private的，且声明为final——即只能赋值一次，且不能通过直接访问的方式修改，eg：a.value（不可行）
+- 没有定义setter方法，不能通过调用方法的方式修改值
 
-   why 设置为不可变类呢？
+why 设置为不可变类呢？
 
-   程序更为简单且安全，不用担心数据会被意外修改，可以安全的共享数据，尤其是在多线程的情况下。——一旦创建只能读不能写
+程序更为简单且安全，不用担心数据会被意外修改，可以**安全的共享数据**，尤其是在多线程的情况下。——一旦创建只能读不能写
 
-#### （3）Integer
+### （3）Integer
 
 主要是关注二进制操作
 
@@ -232,7 +228,7 @@ public final class Integer extends Number implements Comparable<Integer> {
    public static int reverseBytes(int i);
    ```
 
-   具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+   具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
 2. 循环移位
 
@@ -243,7 +239,7 @@ public final class Integer extends Number implements Comparable<Integer> {
    public static int rotateRight(int i, int distance);
    ```
 
-   具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
+   具体见：[包装类源码](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
 3. valueOf的实现
 
@@ -257,7 +253,7 @@ public final class Integer extends Number implements Comparable<Integer> {
 
    => 这个也是常见的设计思路：**享元模式**（Flyweight）
 
-#### （4）Character
+### （4）Character
 
 1. Unicode基础
 
@@ -364,11 +360,13 @@ public final class Integer extends Number implements Comparable<Integer> {
    public static char reverseBytes(char ch);	// 按字节翻转
    ```
 
-### 2. 文本处理类String和StringBuilder
+
+
+## 2. 文本处理类String和StringBuilder
 
 最常见的操作之一。Java中用来处理字符串的主要类就是`String`和`StringBuilder`。
 
-#### （1）String的基本用法
+### （1）String的基本用法
 
 定义使用：
 
@@ -386,7 +384,7 @@ s1 += "world";
 
 [其他的方法](#string_fun)
 
-#### （2）String的实现原理
+### （2）String的实现原理
 
 常量：
 
@@ -636,7 +634,7 @@ for(int i=0;i<3;i++){
 System.out.println(hello);
 ```
 
-### 3. 数组操作类Arrays
+## 3. 数组操作类Arrays
 
 对标C的数组，相比较后面的容器，效率会高很多——因为是随机存取的，所以时间复杂度就是O(1)
 
@@ -718,7 +716,7 @@ public static int deepHashCode(Object a[]);
 
 具体见：[Java库源码阅读](http://note.youdao.com/noteshare?id=fc7f62615236fbe3814aefabdd5c2241&sub=E1449B87AC3240ADA389BAF1006C6459)
 
-### 4. 时间和日期的处理
+## 4. 时间和日期的处理
 
 介绍的是Java8之前的时间API，Java8开始重新设计了日期和时间的API，新增了Java包`java.time`（使用了Lambda，之后再看）
 
@@ -990,7 +988,7 @@ try {
 
    不是线程安全的，多个线程同时使用一个实例对象会存在问题。
 
-### 5. 随机函数
+## 5. 随机函数
 
 #### （1）基本随机：Math.random()
 
