@@ -17,14 +17,29 @@
 
 遇到的问题：常规的二分查找都是给定一个target，然后在数组中查找一个符合要求的位置等。但是我们的限制是用二分查找，找最小数字，而最小的数字是一个相对量，并没有一个可以比较的数。 => 将mid指向的值和left/right指向的值比较
 
-**那么选择left 还是 right呢？**
+1. **那么选择left 还是 right呢？**
 
-——需要把握住，由于旋转，所以**正确的解一定出现在后半部分**，且**前半部分的值都 >= 后半部分的值**
+   ——需要把握住，由于旋转，所以**正确的解一定出现在后半部分**，且**前半部分的值都 >= 后半部分的值**
 
-而前半部分的值不一定有参考性。如果mid的值>left的值，并不能说明解一定在[mid, left]范围内；还是[mid, right]范围内，eg：[3,4,5,1,2]，同理mid的值<left的值，也无法做出判断。
+而前半部分的值不一定有参考性，即使对于最常规的旋转数组，也有点反思维
+
+且，由于**存在未旋转的特殊情况**
 
 所以，**选择right指向的值作为判断**
 
-
+```java
+class Solution {
+    public int minArray(int[] numbers) {
+        int left = 0, right = numbers.length - 1;
+        while(left < right){
+            int mid = left + (right - left) / 2;
+            if(numbers[mid] < numbers[right]) right = mid;	// mid的值小于右边，那么是[left,right]范围太大，导致后半部分有些出现在前面了
+            else if(numbers[mid] > numbers[right]) left = mid + 1;	// mid值大于右边，那么是前半部分有些出现在后面了
+            else right--;
+        }
+        return numbers[left];
+    }
+}
+```
 
 参考：https://leetcode-cn.com/problems/xuan-zhuan-shu-zu-de-zui-xiao-shu-zi-lcof/solution/mian-shi-ti-11-xuan-zhuan-shu-zu-de-zui-xiao-shu-3/

@@ -13,9 +13,7 @@ Collection作为容器类的超类，继承它称为它的子类的有：Set、L
 
 ## 一、ArrayList
 
-**ArrayList：动态数组容器类**，对标的是普通的数组（普通的数组长度是固定的，不能变化，如果长度不够需要重新建一个数组，将原来的数组复制过去）
 
-首先看一下类头：
 
 ```Java
 public class ArrayList<E> extends AbstractList<E>
@@ -65,51 +63,6 @@ public void clear();		// 清空数组， arr.clear();
 ### （二）基本原理
 
 最最基本的原理，其底层还是数组，数组的操作就是增、删、改、查，就是增加稍微有些不同，其他和普通数组一样
-
-#### 1. ArrayList的实例变量：
-
-```Java
-transient Object[] elementData; // 内部私有数组，如果当前大小不够了会重新申请一个数组，那么elementData修改引用即可
-private int size;		// 记录数组当前长度，私有，只能通过size()访问——这两个变量就是上面操作的基本对象了
-
-private static final int DEFAULT_CAPACITY = 10;	// 默认的数组长度
-private static final Object[] EMPTY_ELEMENTDATA = {};	// 空数组实例，和下面的区分
-private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};	// 共享的空数组实例（和上面区分，主要是为了看添加第一个元素的时候需要将数组扩展到多大）
-private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;	// ArrayList里面数组的上限（有些JVM需要在数组中保存一些标题字，head words，所以需要将这些空间预留，再次申请会触发OOM异常） 
-```
-
-#### 2. 构造方法：
-
-```Java
-public ArrayList() {		// 无参数构造方法
-    this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;	// 直接赋值空数组实例过去
-}
-
-public ArrayList(int initialCapacity) {	// 传递了数组的初始长度
-    if (initialCapacity > 0) {		// 初始长度>0
-        this.elementData = new Object[initialCapacity];	// 创建指定长度的数组
-    } else if (initialCapacity == 0) {		// 初始长度为0，那么传递一个空数组实例即可
-        this.elementData = EMPTY_ELEMENTDATA;
-    } else {			// 抛出异常——非法传参
-        throw new IllegalArgumentException("Illegal Capacity: "+
-                                           initialCapacity);
-    }
-}
-
-public ArrayList(Collection<? extends E> c) {		// 传递了一个ArrayList对象
-    elementData = c.toArray();		// 将传递来的容器转换成ArrayList
-    if ((size = elementData.length) != 0) {		// 如果数组不为空
-        // c.toArray might (incorrectly) not return Object[] (see 6260652)
-        if (elementData.getClass() != Object[].class)	// 可能c.toArray()不能得到Object[]类的数组，需要额外操作
-            elementData = Arrays.copyOf(elementData, size, Object[].class);
-    } else {
-        // replace with empty array.
-        this.elementData = EMPTY_ELEMENTDATA;		// 数组为空，就返回空数组
-    }
-}
-```
-
-——第三个构造函数比较复杂，具体见[Java的额外知识](http://note.youdao.com/noteshare?id=9f8ab6eaf048c06b8c823ebe1c7f0b8c&sub=38FCCF96A0C74660A8B19E1140BA449E#7)
 
 #### 3. 源代码阅读：
 

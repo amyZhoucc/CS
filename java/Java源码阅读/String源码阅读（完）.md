@@ -432,6 +432,52 @@ public int compareTo(String anotherString) {
 }
 ```
 
+### 4.10 trim：修剪字符串
+
+就是将字符串最前面和最后后面的空格全部删除，然后
+
+```java
+public String trim() {
+    int len = value.length;
+    int st = 0;
+    char[] val = value;    /* avoid getfield opcode */
+
+    while ((st < len) && (val[st] <= ' ')) {
+        st++;
+    }
+    while ((st < len) && (val[len - 1] <= ' ')) {
+        len--;
+    }
+    // 如果确定需要截取，那么去获得子串（就是创建一个新的字符串）；如果不需要截取直接返回当前对象
+    return ((st > 0) || (len < value.length)) ? substring(st, len) : this;
+}
+```
+
+### 4.11 subString()：获取子字符串
+
+可以只指定起始，那么就是从起始到结束
+
+也可以指定起始和结尾，那么就是截取部分
+
+——本质就是创建新的字符串对象
+
+```java
+public String substring(int beginIndex, int endIndex) {			// [)
+    if (beginIndex < 0) {
+        throw new StringIndexOutOfBoundsException(beginIndex);
+    }
+    if (endIndex > value.length) {
+        throw new StringIndexOutOfBoundsException(endIndex);
+    }								// 判断传参
+    int subLen = endIndex - beginIndex;			// 确定截取的长度
+    if (subLen < 0) {
+        throw new StringIndexOutOfBoundsException(subLen);
+    }
+    return ((beginIndex == 0) && (endIndex == value.length)) ? this
+        : new String(value, beginIndex, subLen);			// 如果参数就是现在的开头和结尾并并不截取；否则，创建一个新的字符串对象
+}
+```
+
 # String常用方法：
 
 ## 1. 创建
@@ -454,19 +500,15 @@ s.charAt(2);		// 获取指定位置的字符——value数组索引即可O(1)
 ```
 
 ```java
-s.subString(3, 6);		// 截取字符串
+s.subString(3, 6);		// 截取字符串[)
 s.getBytes()			// 获取字节数组
 ```
-
-
 
 ## 3. 改
 
 ```
 s.toCharArray();		// 转换成字符串
 ```
-
-
 
 ```java
 s.toUpperCase();		// 可以将string里面所有字符的变成大写
@@ -475,11 +517,9 @@ s.toLowerCase();		// 可以将string里面所有的字符变成小写
 
 ## 4. 删
 
-```
+```java
 s.trim();		// 去掉起始和结尾的空格
 ```
-
-
 
 根据匹配给定的正则表达式来拆分字符串：
 

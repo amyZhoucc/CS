@@ -1,6 +1,14 @@
 # ArrayList源码分析
 
-### 1. 类头：
+总结：
+
+1. ArrayList是**非线程安全的**（即多个线程同时修改里面的内容，会发生并发问题），如果要并发修改，需要使用synchronized进行同步。
+2. 可能抛出的异常：**ConcurrentModificationException**：并发修改异常。（在迭代器遍历时，如果另外一个线程修改了数组的结构，就会触发该异常）
+3. ArrayList 的**容量会根据列表大小自动调整**，每次扩容大小起码是1.5倍。在添加大量元素之前，可以使用ensureCapacity 方法来保证列表有足够空间存放元素。
+4. ArrayList可以存放null
+5. 由于内部是数组，所以可以实现O(1)时间的查找
+
+## 1. 类头：
 
 继承自AbstractList
 
@@ -9,45 +17,74 @@ public class ArrayList<E> extends AbstractList<E>
         implements List<E>, RandomAccess, Cloneable, java.io.Serializable{}
 ```
 
-### 2. 静态变量
+继承自：
+
+实现：Serializable：序列化接口；Cloneable：可进行克隆；RandomAccess 也是一个**标记类**（本身没有方法，只是做标记），实现 RandomAccess 表示该类支持快速随机访问
+
+## 2. 静态变量
 
 ```java
-private static final long serialVersionUID = 8683452581122892189L;	// 序列号——应该是来反序列化中使用的
-```
-
-### 3. 实例变量
-
-```Java
-transient Object[] elementData; // 内部私有数组，如果当前大小不够了会重新申请一个数组，那么elementData修改引用即可
-private int size;		// 记录数组当前长度，私有，只能通过size()访问——这两个变量就是上面操作的基本对象了
-
-private static final int DEFAULT_CAPACITY = 10;	// 默认的数组长度
-private static final Object[] EMPTY_ELEMENTDATA = {};	// 空数组实例，和下面的区分
-private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};	// 默认的共享的空数组实例（和上面区分，主要是为了看添加第一个元素的时候需要将数组扩展到多大）
+private static final int DEFAULT_CAPACITY = 10;	// 默认的数组长度为10
 
 // 数组长度的上限（有些JVM需要在数组中保存一些标题字，head words，所以需将这些空间预留，再次申请会触发OOM异常） 
 private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;	
+```
 
+默认的数组大小是10，但是创建的时候，**除非指定数组大小（构造方法2）/传递一个实例变量过来（构造方法3），都不会默认分配10大小**，主要是为了节省空间
+
+```java
+private static final Object[] EMPTY_ELEMENTDATA = {};	// 空数组实例，和下面的区分
+private static final Object[] DEFAULTCAPACITY_EMPTY_ELEMENTDATA = {};	// 默认的共享的空数组实例（和上面区分，主要是为了看添加第一个元素的时候需要将数组扩展到多大）
+```
+
+`EMPTY_ELEMENTDATA`和`DEFAULTCAPACITY_EMPTY_ELEMENTDATA`两个，前一个是通过第二个构造函数产生的，即`new ArrayList(0)`；后一个是无参构造方法产生的，即`new ArrayList();`
+
+## 3. 实例变量
+
+```Java
+transient Object[] elementData; // 内部私有数组，如果当前大小不够了会重新申请一个数组，那么elementData修改引用即可
+```
+
+elementDate就是内部实际存储的数据元素的地方
+
+why设置为object类型，因为在编写ArrayList代码时，并不知道会传入何种类型的对象，所以统一设置为object方便扩展。若只允许特定的类型，会妨碍它成为一个“常规用途”的工具，为用户带来麻烦
+
+```java
+private int size;// 记录数组当前元素个数，私有，通过size()访问
+```
+
+需要注意的是：size是指示数组实际存储的元素个数，一般会小于数组实际长度，即`size <= arr.length`
+
+```java
 protected transient int modCount = 0;		// 记录数组的结构性变化次数——是继承自AbstractList的
 ```
 
-ps：需要注意的是：size是指示数组实际存储的元素个数，一般会小于数组实际长度，即`size <= arr.length`
+来**记录修改次数**，主要是在**使用迭代器遍历**的时候，来记录那些发生结构性变化的操作，主要用在**多线程环境下**，防止一个线程在迭代而另一个线程在修改结构。——但是这个只能仅最大可能发现。
 
-pps：elementDate就是内部实际存储的数据元素的地方，至于为啥设置为Object类型，具体见[Java的额外知识](http://note.youdao.com/noteshare?id=9f8ab6eaf048c06b8c823ebe1c7f0b8c&sub=38FCCF96A0C74660A8B19E1140BA449E#7)
+modCount出现的函数记录：`trimToSize`，`ensureExplicitCapacity`（所有add操作中用到）、`remove`、`fastRemove`（remove操作中用到）、`removeRange`、`clear`
 
-ppps：`EMPTY_ELEMENTDATA`和`DEFAULTCAPACITY_EMPTY_ELEMENTDATA`两个，前一个代表的是通过第二个构造函数产生的，即`new ArrayList(0)`；后一个代表第一个构造函数产生的，即`new ArrayList();`
+## 4. 构造方法
 
-pppps：默认的数组大小是10，但是创建的时候，除非指定数组大小（构造方法2）/传递一个实例变量过来（构造方法3），都不会默认分配10大小，主要是为了节省空间
-
-ppppps：modCount出现的函数记录：`trimToSize`，`ensureExplicitCapacity`（所有add操作中用到）、`remove`、`fastRemove`（remove操作中用到）、`removeRange`、`clear`
-
-### 4. 构造方法
+### 4.1 无参构造方法
 
 ```java
 public ArrayList() {		// 无参数构造方法
-    this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;	// 直接传递空数组实例过去，此时size=0——第二个空数组
+    // 直接传递空数组实例过去，此时size=0——第二个空数组
+    this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;	
 }
+```
 
+默认是空数组，没有指定数组的长度和内容
+
+当添加第一个元素时，如果为DEFAULTCAPACITY_EMPTY_ELEMENTDATA的数组，会将扩充到默认大小DEFAULT_CAPACITY（10）。
+
+### 4.2 带参构造方法
+
+指定初始长度：
+
+如果指定的长度>0，那么会创建指定长度的数组；如果长度=0，那么传递的是默认的空数组
+
+```java
 public ArrayList(int initialCapacity) {	// 传递了数组的初始长度
     if (initialCapacity > 0) {		// 传递的初始长度>0
         this.elementData = new Object[initialCapacity];	// 创建指定长度的数组
@@ -58,9 +95,13 @@ public ArrayList(int initialCapacity) {	// 传递了数组的初始长度
                                            initialCapacity);
     }
 }
+```
 
+指定传入一个集合类型的对象，eg：ArrayList/LinkedList，本质上就是将集合对象转换为数组，然后直接将数组首地址赋值给elementData
+
+```java
 public ArrayList(Collection<? extends E> c) {		// 传递了一个ArrayList对象
-    elementData = c.toArray();		// 将传递来的容器转换成ArrayList
+    elementData = c.toArray();		// 将传递来的容器转换成数组形式
     if ((size = elementData.length) != 0) {		// 如果数组不为空
         // c.toArray might (incorrectly) not return Object[] (see 6260652)
         if (elementData.getClass() != Object[].class)	// 可能c.toArray()不能得到Object[]类的数组，需要额外操作
@@ -72,20 +113,16 @@ public ArrayList(Collection<? extends E> c) {		// 传递了一个ArrayList对象
 }
 ```
 
-ps：构造方法3,`elementData.getClass() != Object[].class`需要额外进行判断，主要是存在`Arrays.asList().toArray()`操作得不到一个`Object[]`，那么需要额外处理，具体见[Java的额外知识](http://note.youdao.com/noteshare?id=9f8ab6eaf048c06b8c823ebe1c7f0b8c&sub=38FCCF96A0C74660A8B19E1140BA449E#7)
+ps：构造方法3,`elementData.getClass() != Object[].class`需要额外进行判断，主要是存在		**`Arrays.asList(xxx).toArray()`**，Arrays.asList()会将一个数组转换成ArrayList对象，而这个ArrayList对象是Arrays内部实现的一个类，和这边的ArrayList有所不同，所以toArray的实现也是不同，是直接返回了一个泛型数组`E[] a`，所以需要将数组复制成`Object[]`类型。
 
-pps：构造1和构造2因为传参不同，虽然两个可能数组长度都为0，但是对应的数组是不一样的
+## 5. 实例方法
 
-### 5. 静态方法
-
-### 6. 实例方法
-
-#### （1）trimToSize()：缩小容量
+### （1）trimToSize()：缩小容量
 
 - 容量常常会大于实际元素的数量（length>size）。**内存紧张**时，可以调用该方法删除预留的位置，调整容量为元素实际数量；
 - 如果确定不会再有元素添加进来时也可以调用该方法来节约空间
 
-=> 所以使用场景是：内存紧张时/数组元素个数确定不变时
+=> 所以使用场景是：**内存紧张时/数组元素个数确定不变时**
 
 ```java
 public void trimToSize() {
@@ -98,11 +135,13 @@ public void trimToSize() {
 }
 ```
 
-#### （2）ensureCapacityInternal()：扩容相关
+——本质上是创建一个新的数组存储，且数组大小完全按照结点个数进行申请
+
+### （2）ensureCapacityInternal()：扩容相关
 
 因为涉及到较多方法之间的传递，需要明白如下：
 
-- mincapacity：代表增加元素后实际的总元素个数
+- mincapacity：代表增加元素后**实际的总元素个数**
 - newcapacity：代表能满足min下的需要扩容的大小
 - 在扩容时，**默认的扩容因子是1.5**，每次需要扩容时，会将原数组大小的1.5倍（newcapacity）和实际需要的数组空间（mincapacity）进行比较，从中取最大值作为数组大小
 
@@ -114,7 +153,7 @@ private void ensureCapacityInternal(int minCapacity) {
 
 // 计算需要扩容的大小——主要是为了处理第一次扩容的/非第一次扩容的情况（会员首充便宜很类似）
 private static int calculateCapacity(Object[] elementData, int minCapacity) {
-    if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {	//如果该数组为第一次使用（刚刚调用构造方法1创建）
+    if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {	//如果该数组为第一次使用
         return Math.max(DEFAULT_CAPACITY, minCapacity);		// 10和minCapacity挑大的——首次使用最小扩容10个或以上（需要单独判断的原因是：因为本来长度为0，1.5*0=0，防止扩容扩个寂寞）
     }
     return minCapacity;		
@@ -151,15 +190,17 @@ private static int hugeCapacity(int minCapacity) {
 }
 ```
 
-ps：调用该扩容方法的方法记录：
+理解：
 
-pps：扩容在这里面是最耗费时间的操作，不仅仅需要重新分配空间，而且需要重新赋值。
+1. 可以看到，如果ArrayList通过无参构造方法创建，在第一次扩容（第一次加入内容时），最小扩容为10
+2. 扩容在这里面是最耗费时间的操作，**不仅仅需要重新分配空间，而且需要重新赋值**。
+3. 这边如果触发扩容，就会改变`elementData`，而其他无变化，那么**对应的`arr.length`变化（数组本身提供的），而size是不会变化的**
 
-ppps：这边如果触发扩容，就会改变`elementData`，而其他无变化，那么对应的`arr.length`变化（数组本身提供的），而size是不会变化的
-
-#### （3）关于ArrayList的一些判断、查找方法
+### （3）查
 
 都比较简单，稍微过一遍即可
+
+查询ArrayList的存储结点个数、查询是否为空
 
 ```java
 // ——Collection接口定义的需要实现的
@@ -171,13 +212,17 @@ public int size() {
 public boolean isEmpty() {		// 判断数组是否为空——这边不是看数组长度，而是看数组中存在的元素个数是否为0
     return size == 0;
 }
+```
 
+查找ArrayList是否存在某个对象，或者某个对象的index/lastIndex
+
+```java
 // ——Collection接口定义的需要实现的
 public boolean contains(Object o) {		// 查找是否存在指定的元素，不存在false；存在true
     return indexOf(o) >= 0;		// 如果返回值为非-1，那么说明存在
 }
 
-// 查找第一个符合的就返回对应的索引
+// 查找第一个符合的就返回对应的索引，O(N)
 public int indexOf(Object o) {
     if (o == null) {			// 对存放了null的元素做了额外的处理——主要是因为null不是实例对象，无法调用equals方法
         for (int i = 0; i < size; i++)
@@ -204,7 +249,13 @@ public int lastIndexOf(Object o) {
     }
     return -1;
 }
+```
 
+ps：从`indexOf`可以发现：**ArrayList中可以存放null值**，在比较时对null值都进行了处理，后面的`remove(object obj)`也符合这个情况
+
+根据index去获取对应下标的对象
+
+```java
 public E get(int index) {		// 获得数组中下标对应的元素
     // 边界检查——只检查是否超过上界，下界不检查——数组会进行下界越界异常:ArrayIndexOutOfBoundsException
     rangeCheck(index); 
@@ -217,15 +268,14 @@ private void rangeCheck(int index) {
         throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
 }
 
-@SuppressWarnings("unchecked")
-E elementData(int index) {		// 求对应索引位置的元素
+E elementData(int index) {		// 求对应索引位置的元素——不进行边界检查
     return (E) elementData[index];
 }
 ```
 
-ps：从`indexOf`可以发现：ArrayList中可以存放null值，在比较时对null值都进行了处理，后面的`remove(object obj)`也符合这个情况
+### （4）增
 
-#### （4）增
+针对add的边界检查——需要检查上下界，和上面的rangeCheck有所不同
 
 ```java
 // 针对add的边界检查——需要检查上下界，如果越界就要抛出特定异常进行提示
@@ -237,14 +287,24 @@ private void rangeCheckForAdd(int index) {
 private String outOfBoundsMsg(int index) {
     return "Index: "+index+", Size: "+size;
 }
+```
 
+添加：——均存在扩容的可能
+
+添加到列表尾
+
+```java
 // 在数组末尾添加元素——可能存在扩容问题——大部分时间都花在此处
 public boolean add(E e) {
     ensureCapacityInternal(size + 1);  // 确定是否当前容量是否满足——注意这边modCount++——因为数组结构发生变化
     elementData[size++] = e;	// 添加元素，并且更新最新的size
     return true;
 }
+```
 
+添加到指定index，那么index后面的数组需要全部移动1位
+
+```java
 // ——Collection接口定义的需要实现的
 // 在数组的指定位置添加元素element
 public void add(int index, E element) {
@@ -256,7 +316,11 @@ public void add(int index, E element) {
     elementData[index] = element;	// 空出来的index给element
     size++;		// 计数++
 }
+```
 
+添加整个集合到当前对象，可以指定起始index，那么index及其之后的数组需要移动n位
+
+```java
 // ——Collection接口定义的需要实现的
 // 将包装类c的内容加入到本对象的数组中
 public boolean addAll(Collection<? extends E> c) {		// c的类型参数必须是E的子类或E本身——这样才能加入到数组中去
@@ -287,68 +351,13 @@ public boolean addAll(int index, Collection<? extends E> c) {
 }
 ```
 
-ps：`addAll()`可以发现调用了`toArray()`，但是没有对其结果进行判断`a.getClass() == Object[].class`这边不需要再针对Arrays.asList().toArray()进行处理了，因为这边的操作只是获得数组a，然后将a中的元素后面还是会合并到elementData中的，所以不会涉及到对a数组内容进行增，所以不会存在类型不匹配的问题。
+ps：`addAll()`可以发现调用了`toArray()`，但是没有对其结果进行判断`a.getClass() == Object[].class`这边不需要再针对Arrays.asList().toArray()进行处理了，因为这边的操作只是获得数组a，然后将a中的元素后面还是会合并到elementData中的，所以**不会涉及到对a数组内容进行增，所以不会存在类型不匹配的问题**。
 
-#### （5）删
+### （5）删 
+
+常规的remove
 
 ```java
-// ——Collection接口定义的需要实现的
-// 删除所有同时出现在集合c中的元素
-public boolean removeAll(Collection<?> c) {	
-    Objects.requireNonNull(c);		// 判断该对象c是否是null
-    return batchRemove(c, false);	
-}
-
-// ——Collection接口定义的需要实现的
-// 只保留所有出现在C集合中的元素
-public boolean retainAll(Collection<?> c) {
-    Objects.requireNonNull(c);
-    return batchRemove(c, true);
-}
-
-// 判断对象是否不存在
-public static <T> T requireNonNull(T obj) {
-    if (obj == null)
-        throw new NullPointerException();	// 如果是null，就抛出异常
-    return obj;
-}
-
-// 具体的删除操作——是会根据complement进行选择，是删除存在or保留存在的
-private boolean batchRemove(Collection<?> c, boolean complement) {
-    final Object[] elementData = this.elementData;
-    int r = 0, w = 0;		// r：读取的索引值；w：写的索引值
-    boolean modified = false;
-    try {
-        for (; r < size; r++)
-            if (c.contains(elementData[r]) == complement)// complement=true——存在即写入；false——不存在即写入
-                elementData[w++] = elementData[r];	// 将符合要求的内容写到w对应的索引处，并更新w
-    } finally {
-        // 这个就是如果触发了异常，那么会导致后面东西无法处理完，那么后面的数据都是乱的，所以需要将r后面的数据全部保存到w后面，使后面的数据仍旧保证正常
-        if (r != size) {		// 到这一步，说明可能发生了异常
-            System.arraycopy(elementData, r,
-                             elementData, w,
-                             size - r);
-            w += size - r;
-        }
-        // 到这一步说明数据处理完了or数据即使没有处理完也全部保存完毕了，那么更新哪些最后的数据让其引用减少方便回收
-        if (w != size) {		// 说明存在被删除的元素
-            // 将最后面的元素全部赋为null，取消对这些元素的引用，让GC去判断是否回收对应的元素
-            for (int i = w; i < size; i++)	
-                elementData[i] = null;
-            modCount += size - w;		// 记录被修改的次数——数组结构发生变化，size-w就是被删除的元素个数
-            size = w;		// 更新最新的数组存储元素个数
-            modified = true;	// 并标记为修改了
-        }
-    }
-    return modified;
-}
-```
-
-ps：w和r有点巧妙，虽然也是常规思路，限制了w<=r，所以w如果要写入的话可以直接覆盖掉当前值，因为r已经在w后面了
-
-pps：modCount其他地方都是直接++，而这边是唯一一个地方进行了+(size-w)操作——我的分析可能和并发有关系——留待后续研究
-
-```Java
 // 删除指定索引的元素，并返回该元素
 public E remove(int index) {
     rangeCheck(index);		// 检查index的是否越界（上越界）
@@ -408,6 +417,65 @@ protected void removeRange(int fromIndex, int toIndex) {
 }
 ```
 
+与集合相关的删除
+
+```java
+// ——Collection接口定义的需要实现的
+// 删除所有同时出现在集合c中的元素
+public boolean removeAll(Collection<?> c) {	
+    Objects.requireNonNull(c);		// 判断该对象c是否是null
+    return batchRemove(c, false);	
+}
+
+// ——Collection接口定义的需要实现的
+// 只保留所有出现在C集合中的元素
+public boolean retainAll(Collection<?> c) {
+    Objects.requireNonNull(c);
+    return batchRemove(c, true);
+}
+
+// 判断对象是否不存在
+public static <T> T requireNonNull(T obj) {
+    if (obj == null)
+        throw new NullPointerException();	// 如果是null，就抛出异常
+    return obj;
+}
+
+// 具体的删除操作——是会根据complement进行选择，是删除存在or保留存在的
+private boolean batchRemove(Collection<?> c, boolean complement) {
+    final Object[] elementData = this.elementData;
+    int r = 0, w = 0;		// r：读取的索引值；w：写的索引值
+    boolean modified = false;
+    try {
+        for (; r < size; r++)
+            if (c.contains(elementData[r]) == complement)// complement=true——存在即写入；false——不存在即写入
+                elementData[w++] = elementData[r];	// 将符合要求的内容写到w对应的索引处，并更新w
+    } finally {
+        // 这个就是如果触发了异常，那么会导致后面东西无法处理完，那么后面的数据都是乱的，所以需要将r后面的数据全部保存到w后面，使后面的数据仍旧保证正常
+        if (r != size) {		// 到这一步，说明可能发生了异常
+            System.arraycopy(elementData, r,
+                             elementData, w,
+                             size - r);
+            w += size - r;
+        }
+        // 到这一步说明数据处理完了or数据即使没有处理完也全部保存完毕了，那么更新哪些最后的数据让其引用减少方便回收
+        if (w != size) {		// 说明存在被删除的元素
+            // 将最后面的元素全部赋为null，取消对这些元素的引用，让GC去判断是否回收对应的元素
+            for (int i = w; i < size; i++)	
+                elementData[i] = null;
+            modCount += size - w;		// 记录被修改的次数——数组结构发生变化，size-w就是被删除的元素个数
+            size = w;		// 更新最新的数组存储元素个数
+            modified = true;	// 并标记为修改了
+        }
+    }
+    return modified;
+}
+```
+
+ps：w和r有点巧妙，虽然也是常规思路，限制了w<=r，所以w如果要写入的话可以直接覆盖掉当前值，因为r已经在w后面了
+
+pps：modCount其他地方都是直接++，而这边是唯一一个地方进行了+(size-w)操作——我的分析可能和并发有关系——留待后续研究
+
 ```java
 public void clear() {
     modCount++;			// 结构发生改变，就++
@@ -420,9 +488,7 @@ public void clear() {
 }
 ```
 
-
-
-#### （6）改
+### （6）改
 
 ```java
 // 找到对应的索引，将值设置为element，并返回旧的值——实际上赋值的过程是引用赋值
@@ -436,6 +502,8 @@ public E set(int index, E element) {
 ```
 
 #### （7）clone()：浅拷贝
+
+实际上会创建一个新的arrayList对象，然后将数组内容全部复制过去
 
 ```java
 public Object clone() {
@@ -451,7 +519,9 @@ public Object clone() {
 }
 ```
 
-#### （8）toArray()：转换成数组——浅拷贝
+### （8）toArray()：转换成数组——浅拷贝
+
+每个collection对象都需要实现的
 
 ```java
 // ——Collection接口定义的需要实现的
@@ -477,7 +547,7 @@ ps：注意数组类型要求是Object[]类型，因为elementData是Object[]类
 
 （主要是与之对比的是Arrays内部实现的ArrayList类，就是E[]类型的数组，返回值也是虽然是Obejct[]类型，但是本质还是E[]类型）
 
-#### （9）流操作（待研究）
+### （9）流操作（待研究）
 
 ——stream操作还没涉猎到，暂时不管
 
@@ -528,7 +598,26 @@ private void readObject(java.io.ObjectInputStream s)
 }
 ```
 
-### 7. 接口实现Iterable
+### （10）sort：排序
+
+对ArrayList进行排序，本质上还是对内部的数组进行排序，并且需要指定比较器
+
+——该方法一般是通过**`Collections.sort`**进行调用的
+
+```java
+public void sort(Comparator<? super E> c) {
+    final int expectedModCount = modCount;
+    Arrays.sort((E[]) elementData, 0, size, c);
+    if (modCount != expectedModCount) {				// 防止期间发生数组结构改变的事件
+        throw new ConcurrentModificationException();
+    }
+    modCount++;			//是原地sort，所以改变了数组的结构
+}
+```
+
+
+
+## 7. 接口实现Iterable
 
 ```java
 public Iterator<E> iterator() {		// 实现iterator方法，就是实现了Iterable接口
@@ -622,11 +711,11 @@ ps：前面的`modCount`主要在这边发挥了作用，迭代器每次操作�
 
 ——可以发现，在代码里面有很多判断操作，并且throw了很多`ConcurrentModificationException`异常，主要是考虑到**并发**的问题——针对一个线程用迭代器进行遍历，而另一个线程修改数组结构，这时候就会触发并发修改异常。因为修改数组结构后，数组遍历将不再正确
 
-pps：但是我觉得这个并发限制做的还是存在问题的，只是粗糙的考虑了一些情况还是存在漏洞的（ArrayList本身也不是线程安全的，就可能要求也不是很多，能发现一些就行？？？），应该是我还没学到并发，留待后面再看，可能是我理解存在偏差
+pps：但是我觉得这个并发限制做的还是存在问题的，只是粗糙的考虑了一些情况还是存在漏洞的（ArrayList本身也不是线程安全的，尽可能发现即可）
 
 该迭代器实现了`Iterator`接口并实现了相关方法，提供我们对集合的遍历能力。总结：`ArrayList`的迭代器默认是其内部类实现，实现一个自定义迭代器只需要实现`Iterator`接口并实现相关方法即可。而实现`Iterable`接口表示该实现类具有像`for-each loop`迭代遍历的能力。
 
-### 8. 接口实现ListIterator
+## 8. 接口实现ListIterator
 
 ```java
 public ListIterator<E> listIterator(int index) {
@@ -707,7 +796,7 @@ private class ListItr extends Itr implements ListIterator<E> {	// 继承了上�
 
 从大方面来看：ListIterator是继承自Itr，它比Itr功能更完善，但是适用范围变窄：
 
-- ListIterator只能用于List及其子类型；Iterator可以应用于所有的集合，Set、List和Map和这些集合的子类型
+- ListIterator只能用于**List及其子类型**；Iterator可以**应用于所有的集合**，Set、List和Map和这些集合的子类型
 - ListIterator可实现顺序向后遍历和顺序向前遍历；Iterator只能实现顺序向后遍历
 - ListIterator可以实现remove操作，add操作，set操作；Iterator只能实现remove操作
 
@@ -715,7 +804,7 @@ private class ListItr extends Itr implements ListIterator<E> {	// 继承了上�
 
 尤其是`lastRet`的使用，限制删除次数
 
-### 9. SubList
+## 9. SubList
 
 这个主要是对AbstractList中的SubList的一个重新实现，主要是为了实现`List<E> subList(int fromIndex, int toIndex);`方法的，这个方法在List中定义，然后在AbstractList有过实现
 
@@ -962,7 +1051,7 @@ private class SubList extends AbstractList<E> implements RandomAccess {
 }
 ```
 
-### 10. 接口实现spliterator
+## 10. 接口实现spliterator
 
 ```java
 public Spliterator<E> spliterator() {		// 是List里面的方法
@@ -1064,7 +1153,7 @@ static final class ArrayListSpliterator<E> implements Spliterator<E> {
 }
 ```
 
-### 11. 其他方法的重写
+## 11. 其他方法的重写
 
 Collection：
 
@@ -1162,7 +1251,7 @@ public void forEach(Consumer<? super E> action) {
 }
 ```
 
-### 12. Collection还有其他未实现的
+## 12. ArrayList直接继承的方法
 
 Collection定义了两个方法：`equals`和`hashCode`，只有在`AbstractList`中进行了实现，而`ArrayList`是直接使用的
 
@@ -1202,10 +1291,10 @@ public int hashCode() {					// 实现了Collection的方法，ArrayList是直接
 - [ ] `batchRemove()`中的`modCount += size - w;`操作的具体原因
 - [ ] Iterator并发判断的研究
 - [ ] spliterator的使用进行研究
-- [ ] 学艺不精，待以后Java学的再熟练一点后再来分析一波（寒假再来复习复习）
 
 参考：
 
 1. https://cloud.tencent.com/developer/article/1141497
 2. https://juejin.cn/post/6844903624062009357
 3. https://juejin.cn/post/6844903614704680974
+4. https://www.huaweicloud.com/articles/3a7734560df006964bc1b6d66115625e.html
