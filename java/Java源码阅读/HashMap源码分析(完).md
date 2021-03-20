@@ -7,11 +7,15 @@
 一些特性：
 
 - **HashMap 允许 null 键和 null 值，在计算哈键的哈希值时，null 键哈希值为 0。**即，null键存储在index=0的地方
-- HashMap 并不保证键值对的顺序，即在进行某些操作后，键值对的顺序可能会发生变化。
-- HashMap 是非线程安全类，在多线程环境下可能会存在问题。
+- HashMap 并**不保证键值对的顺序**，即在进行某些操作后，键值对的顺序可能会发生变化。
+- HashMap 是**非线程安全**类，在多线程环境下可能会存在问题。
 - JDK 1.8 中引入了红黑树优化过长的链表
 
-ps：hashMap和hashSet基本等效，除了：HashMap是不同步的，且允许为null
+ps：hashMap和hashSet基本等效，除了：HashMap是不同步的，且允许为null；HashSet要求里面的结点不重复，且没有键值对的概念
+
+Hashtable，实现原理与HashMap类似，但是不允许键、值出现null，**内部通过synchronized实现了线程安全**，所以并发性能并不好。
+
+**不需要并发安全的场景中，推荐使用HashMap；高并发的场景，用ConcurrentHashMap**
 
 ## 1. 总体了解
 
@@ -33,7 +37,7 @@ Node是HashMap实现的内部类：
 
 ```java
 static class Node<K,V> implements Map.Entry<K,V> {
-    final int hash;			// 用来定位数组的索引位置，就是该点值的哈希值，即数组的下标
+    final int hash;			// 用来定位数组的索引位置，就是该点值的哈希值，即数组的下标，直接存储加快速度
     final K key;			// 键值对
     V value;
     Node<K,V> next;			// 指示下一个结点
@@ -92,7 +96,50 @@ public class HashMap<K,V> extends AbstractMap<K,V>
     implements Map<K,V>, Cloneable, Serializable {}
 ```
 
-继承自`AbstractMap`抽象类，实现了接口：Map（关注的），Cloneable, Serializable
+继承自`AbstractMap`抽象类，实现了接口：Map（关注的），Cloneable, Serializable。
+
+Map接口定义的方法：
+
+```java
+int size();		// 求当前容量
+boolean isEmpty();		// 判断map是否为空
+
+boolean equals(Object o);
+int hashCode();
+```
+
+```java
+boolean containsKey(Object key);		// 判断指定的键是否存在
+boolean containsValue(Object value);		// 判断指定的value是否存在（需要遍历）
+
+V get(Object key);		// 根据键获得对应的值
+V put(K key, V value);		// 键值对存入map
+void putAll(Map<? extends K, ? extends V> m);		// 将map对应的内容全部放入当前的map中
+V remove(Object key);		// 根据键删除对应的键值对
+void clear();			// 清空
+```
+
+```java
+Set<K> keySet();			// map中键的集合
+Collection<V> values();		// value的集合
+Set<Map.Entry<K, V>> entrySet();		// 键值对的集合
+```
+
+```java
+// 嵌套接口——代表一条键值对
+interface Entry<K,V> {
+    K getKey();
+    V getValue();
+    V setValue(V value);
+    boolean equals(Object o);
+    int hashCode();
+    ....(默认方法)
+}
+```
+
+还有几个默认方法。
+
+`keySet(), values(), entrySet()`返回的都是**视图**，不是复制的值，**基于返回值的修改会直接修改Map自身**
 
 ## 静态变量
 
@@ -296,7 +343,7 @@ public Set<K> keySet() {
 
 final class KeySet extends AbstractSet<K> {
     public final int size()                 { return size; }
-    public final void clear()               { HashMap.this.clear(); }
+    public final void clear()               { HashMap.this.clear(); }		// 就是清除整个哈希表
     public final Iterator<K> iterator()     { return new KeyIterator(); }
     public final boolean contains(Object o) { return containsKey(o); }
     public final boolean remove(Object key) {

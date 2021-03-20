@@ -2,6 +2,8 @@
 
 是工具类，用来对**集合对象**进行辅助的。地位等同于Arrays。所有方法均是静态方法，可以直接通过`Collections.方法名(xxx)`进行调用。
 
+注意：集合只能存储对象类型，而数组可以存储各种类型的，可以是基本数据类型，可以是对象类型的
+
 由于源码比较多，所以只关注一些常见的方法：
 
 ## 1. 构造方法
@@ -19,7 +21,7 @@ private Collections() {
 
 ps：comparable接口只需要实现**`compareTo`方法**
 
-### 1. 原理
+### 2.1 原理
 
 ```JAVA
 public static <T> void sort(List<T> list, Comparator<? super T> c) {
@@ -43,7 +45,7 @@ default void sort(Comparator<? super E> c) {
 
 ——sort方法本质上还是去对内部的数组进行排序，并且可以自定义比较器
 
-### 2. 使用
+### 2.2 使用
 
 ```java
 class MyComparator implements Comparator{			// 自定义一个比较器
@@ -62,9 +64,16 @@ Collections.sort(list, new MyComparator());			// 创建比较器实例对象
 ```java
 public static <T> int binarySearch(List<? extends Comparable<? super T>> list, T key) {
     if (list instanceof RandomAccess || list.size()<BINARYSEARCH_THRESHOLD)	// list要是能够随机查找的（数组等），或者长度没有超过阈值的
-        return Collections.indexedBinarySearch(list, key);
+        return Collections.indexedBinarySearch(list, key);	// 普通的二分查找
     else
-        return Collections.iteratorBinarySearch(list, key);
+        return Collections.iteratorBinarySearch(list, key);	// 迭代的二分查找
 }
 ```
 
+## 4. reverse
+
+## 5. shuffle
+
+## 6. copyOf
+
+## 7. min/max

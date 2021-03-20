@@ -276,3 +276,723 @@ synchronized是悲观锁，在操作同步资源之前需要给同步资源先�
   使用缓存锁定来保证原子性：内存区域如果被缓存在处理器的缓存行中，并且在Lock操作期间被锁定。当它执行锁操作回写到内存时，处理器不在总线上声言LOCK #信号，而是修改内部的内存地址，并利用它的缓存一致性机制来保证操作的原子性。
 
   缓存一致性机制，某个CPU将缓存行写回后，会通知其他CPU对该内存地址的缓存无效，需要重新读取。
+
+# 2. Java并发编程的基础
+
+## 2.1 线程
+
+### 2.1.1 线程概念 & Java中的线程
+
+现代操作系统在运行一个程序时，会为其创建一个进程。例如启动一个Java进程，就会为其创建一个进程。
+
+现代操作系统调度的最小单元是线程，一个进程里可以有多个线程，线程有独立的程序计数器、堆栈和局部变量，能共享进程的内存变量。
+
+Java程序天生就是多线程程序，执行main()方法的是一个名称为main的线程。
+
+可以通过代码查看普通的Java程序包含哪些线程：
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210319115440198.png" alt="image-20210319115440198" style="zoom:80%;" />
+
+1. Monitor Ctrl-Break：在idea中特有的线程。且debug启动的不会出现，只有run启动的会出现
+
+   一般是埋坑的，有些调试的时候会发现线程个数不符合预期，那要考虑是否是在idea中特有的线程引起的
+
+2. Attach Listener：监听各种请求的socket连接,把执行的操作扔给VM Thread
+
+3. Signal Dispatcher：接受各种信号，交给JVM去处理发出这些信号的线程
+
+4. Finalizer：调用对象的finalize方法的线程
+
+5. Reference Handler：清除reference的线程
+
+6. **main：用户程序的入口**
+
+（`VM Thread`：**线程母体,最原始的线程**，单例，里面有个队列，存放各种的操作，它负责loop处理队列中的操作.（包括对其他线程的创建，分配和对象的清理，cms-mark等工作））
+
+### 2.1.2 why引入多线程
+
+1. **多核处理器——并行方面**
+
+   现代处理器都配备了多核，所以为了充分利用资源
+
+   将计算逻辑分配到多个处理器核心上，就会显著减少程序的处理时间
+
+2. **更快的响应时间——并发方面**
+
+   对于一些IO密集的程序，大部分时间都用在等待IO响应了，而其他任务得不到执行，所以引入多线程，可以在等待的期间去执行其他的任务
+
+3. 更好的编程模型
+
+   Java提供了一系列的模型，而程序员只需要关注如何解决问题，而不用考虑其他的问题。
+
+### 2.1.3 线程优先级
+
+Java线程中，通过一个整型成员变量priority来控制优先级，优先级的范围从1~10，默认是5，可以通过setPriority(int)方法来修改优先级。
+
+**优先级高的线程分配时间片的数量要多于优先级低的线程**。
+
+- 针对频繁阻塞（休眠或者I/O操作）的线程需要设置较高优先级
+- 偏重计算（需要较多CPU时间或者偏运算）的线程则设置较低的优先级，确保处理器不会被独占。
+
+但是注意：
+
+线程优先级不能作为程序正确性的依赖，因为**操作系统可以完全不用理会Java线程对于优先级的设定**。
+
+### 2.1.4 线程状态
+
+归总是5个状态
+
+| 状态                          | 描述                                                         |
+| ----------------------------- | ------------------------------------------------------------ |
+| new态                         | 线程刚被创建，还未调用start                                  |
+| runnable状态（就绪态）        | 随时可以开始执行                                             |
+| running（运行态）             | 获得CPU资源，可以开始运行（Java将runnable和running统称为一类） |
+| blocked（阻塞状态，同步阻塞） | 线程阻塞于锁                                                 |
+| waiting（等待状态）           | 需要等待其他线程做出一定动作，由其他线程notify才能唤醒       |
+| time_waiting（超时等待）      | 如果在限定时间内没有被其他线程唤醒，可以超时后自行唤醒，到runnable状态 |
+| terminated                    | 终止状态                                                     |
+
+<img src="../pic/thread_state.jpg" alt="image-20210319130003866" style="zoom: 70%;" />
+
+<img src="../pic/thread_state.png" style="zoom:80%;" >
+
+ps：阻塞在java.concurrent包中Lock接口的线程状态却是等待状态，因为java.concurrent包中Lock接口对于阻塞的实现均使用了LockSupport类中的相关方法。
+
+### 2.1.5 Daemon线程——特殊线程
+
+Daemon线程是一种支持性线程，它主要被用作**程序中后台调度以及支持性工作**。当一个Java虚拟机中**不存在非Daemon线程的时候，Java虚拟机将会退出**。
+
+在线程调用start变成就绪态之前可以调用**Thread.setDaemon(true)**将线程设置为Daemon线程。
+
+——只能在线程启动之前进行设置，而不能在启动之后。且，Daemon线程可以用户设置。
+
+```java
+public static void main(String[] args) {
+    Thread thread = new Thread(new DaemonRunner(), "DaemonRunner");
+    thread.setDaemon(true);			// setDaemon在start之前
+    thread.start();
+}
+```
+
+#### why需要设置Daemon线程
+
+因为当**所有线程都运行结束时，JVM需要退出**，进程结束。那么如果**有一个线程没有退出，JVM就不会退出。**——所以，所有线程需要能够及时结束。
+
+但是存在一种线程目的就是无限循环，例如，一个定时触发任务的线程。所以需要另外一个线程来强制该线程终止，这个就是Daemon线程。
+
+而jvm中只存在Daemon线程时，jvm就会终止。jvm退出的时候，所有的Daemon线程必须要立即终止，所以Daemon的finally中的语句不一定会被执行到。
+
+但是需要注意：守护线程**不能持有任何需要关闭的资源**，例如打开文件等，因为虚拟机退出时，守护线程没有任何机会来关闭文件，这会导致数据丢失。
+
+### 2.1.6 线程的创建
+
+如何构造一个线程：
+
+调用Thread的构造方法：都会默认去调用init的方法，init就是对线程初始化（初始化有点类似于OS中的）
+
+```java
+public Thread(ThreadGroup group, Runnable target, String name, long stackSize) {
+    init(group, target, name, stackSize);
+}
+```
+
+线程初始化操作：
+
+主要进行一系列的赋值，而都是由其parent线程来进行空间分配的，而child线程继承了parent是否为Daemon、优先级和加载资源的contextClassLoader以及可继承的ThreadLocal
+
+最后给该线程一个tid
+
+```java
+private void init(ThreadGroup g, Runnable target, String name, long stackSize) {
+    init(g, target, name, stackSize, null, true);
+}
+
+private void init(ThreadGroup g, Runnable target, String name,
+                  long stackSize, AccessControlContext acc,
+                  boolean inheritThreadLocals) {
+    if (name == null) {				// 必须要传递线程的名字，否则会抛出异常
+        throw new NullPointerException("name cannot be null");			
+    }
+
+    this.name = name;
+
+    Thread parent = currentThread();			// 新建线程的父线程是当前线程
+    SecurityManager security = System.getSecurityManager();
+    if (g == null) {				// 设置所属的线程组
+        /* Determine if it's an applet or not */
+
+        /* If there is a security manager, ask the security manager
+               what to do. */
+        if (security != null) {
+            g = security.getThreadGroup();
+        }
+
+        /* If the security doesn't have a strong opinion of the matter
+               use the parent thread group. */
+        if (g == null) {
+            g = parent.getThreadGroup();
+        }
+    }
+
+    /* checkAccess regardless of whether or not threadgroup is
+           explicitly passed in. */
+    g.checkAccess();
+
+    /*
+         * Do we have the required permissions?
+         */
+    if (security != null) {
+        if (isCCLOverridden(getClass())) {
+            security.checkPermission(SUBCLASS_IMPLEMENTATION_PERMISSION);
+        }
+    }
+
+    g.addUnstarted();
+
+    this.group = g;					// 线程组设置
+    this.daemon = parent.isDaemon();			// 将daemon、priority属性设置为父线程的对应属性
+    this.priority = parent.getPriority();
+    if (security == null || isCCLOverridden(parent.getClass()))
+        this.contextClassLoader = parent.getContextClassLoader();
+    else
+        this.contextClassLoader = parent.contextClassLoader;
+    this.inheritedAccessControlContext =
+        acc != null ? acc : AccessController.getContext();
+    this.target = target;
+    setPriority(priority);
+    if (inheritThreadLocals && parent.inheritableThreadLocals != null)
+        this.inheritableThreadLocals =
+        ThreadLocal.createInheritedMap(parent.inheritableThreadLocals);		// ——主要都是赋值父线程的
+    /* Stash the specified stack size in case the VM cares */
+    this.stackSize = stackSize;
+
+    /* Set thread ID */
+    tid = nextThreadID();			// 给新建的线程创建一个编号
+}
+```
+
+——初始化线程完毕，在**堆内存**中等待着运行。
+
+### 2.1.7 启动线程
+
+当前线程（即parent线程）**同步告知Java虚拟机**，只要线程规划器空闲，应立即启动调用start()方法的线程。
+
+### 2.1.8 中断（和OS不一样）
+
+该中断和OS不一样，eg：场景：例如下载一个软件，期间不想下载了，选择取消，这个取消就是中断，那么该线程就需要终止。
+
+概念：其他线程给该线程发一个信号，该线程收到信号后结束执行`run()`方法，使得该线程能立刻结束运行。即，提前结束线程
+
+而信号通过**其他线程调用该线程的interrupt方法**，本质上就是设置中断标志位，而目标线程会去检测自身是否interrupted状态，如果是，就立刻结束运行。
+
+注意：
+
+1. interrupt方法只是向线程发送中断请求，但是线程何时响应看代码
+
+2. 如果线程处于等待状态，然后又对其调用interrupt，会抛出**异常`InterruptedException`**
+
+   所以，目标线程只要捕获到`join()`方法抛出的`InterruptedException`，就说明有其他线程对其调用了`interrupt()`方法，通常情况下该线程应该立刻结束运行。
+
+相关方法：
+
+- `thread.interrupt()`：其他线程希望指定的线程终止——就是这是对应的中断标志位
+
+- `thread.isInterrupted()`：判断该线程是否被中断了
+
+  而如果该线程已经处于terminated状态，那么不论是否发生中断，那么返回值都是false，就是非中断状态。
+
+- `Thread.interrupt(xxx)`：对指定线程进行中断标志位复位
+
+- 中断异常`InterruptedException`，当阻塞方法（同步阻塞、等待阻塞、其他阻塞）收到中断请求的时候就会抛出InterruptedException异常
+
+  但是在抛出异常之前，Java虚拟机会先将该线程的中断标识位清除，然后抛出异常，那么再调用isInterrupted()方法将会返回false
+
+  ——但是抛出该异常，说明有线程期待该线程被中断
+
+### 2.1.9 挂起、恢复、停止
+
+分别为suspend、resume、stop方法，非常“人性化”。但是这些API是过期的，不建议使用。
+
+原因：
+
+- suspend：将线程挂起，但是不释放线程所占有的资源，而是持有资源进行挂起，容易出现死锁的情况；
+- stop：结束线程，但是不能保证线程占用的资源正常释放
+
+——存在副作用，所以不建议使用，可以用wait/notify进行替换。
+
+### 2.1.10 安全终止线程
+
+即能够让程序正常走到最后，然后终止；也可以用中断安全终止。反正不能用stop终止。
+
+## 2.2 线程间通信
+
+多个线程能够相互配合完成工作，才能发挥最大的功能。
+
+### 2.2.1 volatile 和 synchronized 关键字
+
+**volatile能保证变量的可见性。**
+
+对象：**针对共享变量**，但是每个变量都会对共享变量进行拷贝（目的是加速程序的执行，这是现代多核处理器的一个显著特性）。所以程序在执行过程中，一个线程**看到的变量并不一定是最新的**。
+
+volatile可以用来修饰字段（成员变量），就是告知程序任何对该变量的访问均需要从共享内存中获取——保证每次查看结果都是最新的。但是，过多地使volatile是不必要的，因为它会降低程序执行的效率。
+
+**synchronized保证互斥性和可见性**：线程在加锁时，先清空工作内存→在主内存中拷贝最新变量的副本到工作内存→执行完代码→将更改后的共享变量的值刷新到主内存中→释放互斥锁。
+
+——synchronized的范围比volatile广
+
+synchronized的基本原理：**使用了monitorenter和monitorexit指令**。同步方法则是依靠方法修饰符上的ACC_SYNCHRONIZED来完成的。本质就是尝试去获取monitor，而这个获取过程是排他的。
+
+任意一个对象都拥有自己的监视器，如果需要同步调用，那么执行方法的**线程必须先获取到该对象的监视器**才能进入同步块或者同步方法。如果获取失败，那么将被阻塞在入口，进入阻塞状态，被挂到同步队列上，直到另外线程释放了该monitor后会将队列上的线程唤醒，然后重新尝试申请（？？？？是唤醒整个队列 or 队头？）
+
+整个流程如下：
+
+<img src="../pic/monitor.jpg" style="zoom: 67%;" >
+
+### 2.2.2 wait/notify机制
+
+synchronzied解决了多线程的竞争问题，但是无法解决多线程的协调问题，配合工作。
+
+使用该机制的原因：线程之间有数据进行传递，例如生产者-消费者，生产者改变某个值之后，消费者才能继续执行下去。但是，如何感知到该值发生变化呢？——用while循环，每隔一段时间检测一遍。但是存在问题：
+
+- 间隔时间过长：**难以确保及时性**，不能及时判断资源已经来了，导致不必要的等待
+- 间隔时间过短：**难以降低开销**，不断进行上下文切换，导致资源浪费
+
+——Java通过内置的等待/通知机制，**是任意Java对象都具备**，因为是在Object类中实现的方法：是native方法
+
+| 方法名            | 描述                                                         |      |
+| ----------------- | ------------------------------------------------------------ | ---- |
+| `wait()`          | 调用该方法的线程会进入等待状态，只有被其他线程通知 或者 被中断 才会返回，注意wait之后会**释放占用的资源** |      |
+| `wait(long)`      | 超时等待，参数是ms为单位的，如果在限定时间内等到了通知或者中断，那么会提前返回；否则超时后也会返回 |      |
+| `wait(long, int)` | 超时等待的粒度更细，单位为ns                                 |      |
+| `notify()`        | 通知**一个**在对象上等待的线程，让其从wait方法中返回，但是只有获取了锁才能返回，如果获取失败了那么无法返回<br />唤醒哪一个，看OS，结果不一样 |      |
+| `notifyAll()`     | 通知****在对象上等待的线程                                   |      |
+
+#### 使用方法：
+
+线程A调用了**对象O的wait()方法**进入等待状态，而另一个线程B调用了对象O的notify()或者notifyAll()方法
+
+```java
+public class WaitNotify {
+    static boolean flag = true;
+    static Object lock = new Object();
+    public static void main(String[] args) throws Exception {
+        Thread waitThread = new Thread(new Wait(), "WaitThread");
+        waitThread.start();			// 先启动wait线程
+        TimeUnit.SECONDS.sleep(1);
+        Thread notifyThread = new Thread(new Notify(), "NotifyThread");		
+        notifyThread.start();		// 后启动notify线程
+    }
+    static class Wait implements Runnable {
+        public void run() {
+            synchronized (lock) {		// 加锁，拥有lock的Monitor——wait线程一定会先持有该lock对象
+                // 当条件不满足时，继续wait，同时释放了lock的锁
+                while (flag) {
+                    try {
+                        System.out.println(Thread.currentThread() + " flag is true. wait");
+                        lock.wait();			// 释放lock资源，然后进行等待
+                    } catch (InterruptedException e) { }
+                }
+                // flag=false，条件满足时，完成工作
+                System.out.println(Thread.currentThread() + " flag is false. running");
+            }
+        }
+    }
+    
+    static class Notify implements Runnable {
+        public void run() {
+            synchronized (lock) {		// 加锁，拥有lock的Monitor
+                // 获取lock的锁，然后进行通知，通知时不会释放lock的锁，
+                // 直到当前线程释放了lock后，WaitThread才能从wait方法中返回
+                System.out.println(Thread.currentThread() + " hold lock. notify");
+                lock.notifyAll();
+                flag = false;
+                SleepUtils.second(5);
+            }
+            // 再次加锁
+            synchronized (lock) {
+                System.out.println(Thread.currentThread() + " hold lock again. sleep");
+                SleepUtils.second(5);
+            }
+        }
+    }
+}
+```
+
+输出：
+
+```
+Thread[WaitThread,5,main] flag is true. wait
+Thread[NotifyThread,5,main] hold lock. notify
+Thread[NotifyThread,5,main] hold lock again. sleep		// 和下面的执行顺序可能会变化，与wait和notify线程的抢占结果相关
+Thread[WaitThread,5,main] flag is false. running
+```
+
+理解：整个流程：
+
+1. 首先wait线程是先执行的，此时只有main线程和wait线程，所以wait能够得到lock，并且默认flag是true，所以能够执行while里面的循环；执行输出，然后执行**`lock.wait()`**，然后**wait线程变成等待状态WAITING，挂在lock的等待队列上，**它会释放占有的对象，lock会被释放
+
+2. 然后notify线程执行，由于wait线程在等待前，将资源释放了，所以lock又能获取成功。执行输出；然后，notify线程唤醒所有挂在lock上的线程**`lock.notifyAll()`**，那么**会将挂在等待队列上的线程放到同步队列上，变成BLOCKED状态**，但是因为无法获得lock资源，只有notify线程释放资源才能从wait中返回。
+
+3. 然后notify释放了资源，wait线程能从wait返回，那么出现了抢占（wait和notify线程均抢占资源lock），然后输出就不确定了
+
+   <img src="../pic/wait_notify_cfg.jpg" style="zoom: 80%;" >
+
+#### **要求：**
+
+1. 在`synchronized`内部可以调用`wait()`使线程进入等待状态
+2. 在`synchronized`内部可以调用`notify()`或`notifyAll()`唤醒其他等待线程
+3. **必须在已获得的锁对象上调用`wait()`方法；**只有获得该对象的锁才能挂在该线程上，才能释放该对象（否则不存在这个概念）
+4. 必须在已获得的锁对象上调用`notify()`或`notifyAll()`方法
+5. **已唤醒的线程还需要重新获得锁后才能继续执行**
+
+所以，消费者和生产者的wait/notify的逻辑：
+
+```java
+// 消费者
+synchronized(对象){
+    while(条件不满足){			//  即使被唤醒并调度回来，还会先进行判断
+        对象.wait();
+    }
+    满足条件后的操作
+}
+
+// 生产者
+synchronized(对象){
+    改变条件
+    对象.notifyAll();
+}
+```
+
+### 2.2.3 管道输入和输出
+
+管道输入/输出流，主要用于**线程之间的数据传输**，而传输的媒介为**内存**。
+
+主要包括了如下4种具体实现：PipedOutputStream、PipedInputStream、PipedReader和PipedWriter（前两种面向字节，而后两种面向字符）
+
+用法：
+
+```java
+public class Piped {
+    public static void main(String[] args) throws Exception {
+        PipedWriter out = new PipedWriter();			// 向管道写的对象
+        PipedReader in = new PipedReader();				// 向管道读的对象
+        // 将输出流和输入流进行连接，否则在使用时会抛出IOException
+        out.connect(in);
+        Thread printThread = new Thread(new Print(in), "PrintThread");
+        printThread.start();
+        int receive = 0;
+        try {
+            while ((receive = System.in.read()) != -1) {
+                out.write(receive);
+            }
+        } finally {
+            out.close();
+        }
+    }
+    static class Print implements Runnable {
+        private PipedReader in;
+        public Print(PipedReader in) {
+            this.in = in;
+        }
+        public void run() {
+            int receive = 0;
+            try {
+                while ((receive = in.read()) != -1) {
+                    System.out.print((char) receive);
+                }
+            } catch (IOException ex) {
+            }
+        }
+    }
+}
+```
+
+——在使用前必须先绑定`out.connect(in);`
+
+### 2.2.4 thread.join()：默认带锁
+
+线程A执行了`threadB.join()`语句，其含义是：当前线程A等待**threadB线程终止之后**才从threadB.join()返回
+
+此外，还提供了`join(long millis)`和`join(long millis,int nanos)`两个具备超时特性的方法.
+
+```java
+public final synchronized void join(long millis) throws InterruptedException {	// 本质上就是调用带有超时等待的join方法
+    long base = System.currentTimeMillis();
+    long now = 0;
+
+    if (millis < 0) {
+        throw new IllegalArgumentException("timeout value is negative");
+    }
+
+    if (millis == 0) {			// 说明无限等待
+        while (isAlive()) {		// 如果该线程存活，那么一直挂起
+            wait(0);		// 0表示无限wait
+        }
+    } else {			// 表示超时等待，那么只有更新倒计时时间
+        while (isAlive()) {	
+            long delay = millis - now;		
+            if (delay <= 0) {
+                break;
+            }
+            wait(delay);			// 否则就等待一段时间
+            now = System.currentTimeMillis() - base;
+        }
+    }
+}
+```
+
+理解：
+
+1. 如果某个线程调用`threadB.join()`之后，开始等待线程B，如果期间按其他线程调用该线程的interrupt方法，那么会抛出`InterruptException`异常——因为处于wait中
+2. 这边的wait方法，本质上就是**`this.wait()`**，对象就是线程对象，而join方法本身就是synchronized的，所以能在里面执行，它必定已经获取到了`this`锁，所以wait之后，会释放this锁
+3. join本质上，还是wait/notify实现的，当线程终止时，会调用线程自身的notifyAll()方法，会通知所有等待在该线程对象上的线程
+
+### 2.2.5 ThreadLocal
+
+#### 原理：
+
+线程本地变量，是一个以**ThreadLocal对象为键、任意对象为值**的存储结构。就是将一个值和线程本身进行绑定。
+
+概念：**每个线程都有同一个变量的独有拷贝**
+
+实现上来说：**每个线程都有一个Map，类型为ThreadLocalMap**，所以调用下面的`set()`方法，实际上是在线程自己的Map里设置了一个条目，**键为当前的ThreadLocal对象，值为value**。
+
+set()方法：
+
+```java
+public void set(T value) {
+    Thread t = Thread.currentThread();
+    ThreadLocalMap map = getMap(t);		// 获得线程的map
+    if (map != null)
+        map.set(this, value);		// 将值设置好
+    else
+        createMap(t, value);		// 如果map还未创建，就创建一个
+}
+```
+
+get()方法：
+
+```java
+public T get() {
+    Thread t = Thread.currentThread();
+    ThreadLocalMap map = getMap(t);
+    if (map != null) {
+        ThreadLocalMap.Entry e = map.getEntry(this);		// 根据key获得value
+        if (e != null) {
+            @SuppressWarnings("unchecked")
+            T result = (T)e.value;
+            return result;
+        }
+    }
+    return setInitialValue();			// 如果获取值失败，那么就去调用initialValue方法
+}
+```
+
+总结：每个线程都有一个Map，对于每个ThreadLocal对象，调用其get/set实际上就是**以ThreadLocal对象为键读写当前线程的Map**
+
+#### 使用：
+
+有两个方法：
+
+```java
+public T get() {}			// 获取变量值
+public void set(T value) {}		// 设置变量值
+```
+
+使用：
+
+```java
+ThreadLocal<Integer> local = new ThreadLocal<>();
+local.set(200);
+System.out.println(local.get());
+```
+
+主要是在多线程中，它们对同一个变量设置值，但是调用的时候值都是不一样的——**访问的虽然是同一个变量local，但每个线程都有自己的独立的值**。
+
+还有两个常用的方法：
+
+```java
+protected T initialValue() {}		// 这个方法经常用来重写，那么
+```
+
+当调用get方法时，如果之前没有设置过，会调用该方法获取初始值，默认实现是返回null；如果set设置之后，又被remove删除掉了，再次调用get，会再调用initialValue获取初始值
+
+```java
+public void remove() {}				// 删除该值：
+```
+
+eg1：
+
+```java
+public class Profiler {
+    // 第一次get()方法调用时会进行初始化（如果set方法没有调用），每个线程会调用一次
+    private static final ThreadLocal<Long> TIME_THREADLOCAL = new ThreadLocal<Long>() {
+        protected Long initialValue() {			// 初始值方法
+            return System.currentTimeMillis();
+        }
+    };
+    public static final void begin() {
+        TIME_THREADLOCAL.set(System.currentTimeMillis());		// 设置初始值
+    }
+    public static final long end() {
+        return System.currentTimeMillis() - TIME_THREADLOCAL.get();
+    }
+    public static void main(String[] args) throws Exception {
+        Profiler.begin();			// 设置初始值
+        TimeUnit.SECONDS.sleep(1);
+        System.out.println("Cost: " + Profiler.end() + " mills");
+    }
+}
+```
+
+理解：主要用来计算经过的时间。即使中间其他线程调用过该ThreadLocal，该线程对应的值是不会变的
+
+eg2：
+
+提供上下文信息，eg：一个线程执行用户的请求，在执行过程中，很多代码都会访问一些共同的信息，比如请求信息、用户身份信息、数据库连接、当前事务等，如果需要将其作为参数进行传递就很麻烦，但是可以用ThreadLocal保存
+
+```java
+public class RequestContext {
+    public static class Request { //...
+    };
+    private static ThreadLocal<String> localUserId = new ThreadLocal<>();
+    private static ThreadLocal<Request> localRequest = new ThreadLocal<>();
+    public static String getCurrentUserId() {
+        return localUserId.get();
+    }
+    public static void setCurrentUserId(String userId) {
+        localUserId.set(userId);
+    }
+    public static Request getCurrentRequest() {
+        return localRequest.get();
+    }
+    public static void setCurrentRequest(Request request) {
+        localRequest.set(request);
+    }
+}
+```
+
+## 2.3 线程池技术
+
+why需要线程池：如果采用一个任务一个线程的方式，将会创建数以万记的线程，会使操作系统频繁的进行线程上下文切换、而线程创建和销毁都是需要资源的。
+
+概念：线程池会预先创建若干个线程，且不能由用户直接对线程的创建进行控制。然后就能用这些固定的线程来完成无数的任务。
+
+线程池的基本实现：P112/P212
+
+工作线程获得`jobs`（任务列表）对象的锁，取出队首的任务开始执行；当jobs为空时，工作者线程`jobs.wait()`进入等待；
+
+添加一个job到jobs后（jobs是共享变量，所以需要互斥的去获取，所以需要获得jobs对象的锁），然后`job.notify()`唤醒一个工作线程（只唤醒一个，不用唤醒全部，减少开销），当然只有在该释放jobs锁之后，工作线程才能变成执行态。
+
+常用的Java Web服务器，如Tomcat、Jetty，在其处理请求的过程中都使用到了线程池技术。
+
+# 3. 锁
+
+绍Java并发包中与锁相关的API和组件
+
+这些API和组件的使用方式和实现细节
+
+注意**锁和synchronized是不同的**
+
+- 功能上，都是用来实现同步的
+
+- 但是使用上，**lock需要显式的获取和释放**；拥有了锁获取与释放的可操作性；可中断的获取锁以及超时获取锁等synchronized无法实现的功能
+
+  ——lock是显式调用的，但是功能多样，扩展性好
+
+在Java SE5之前，一直都是用synchronized来实现锁功能的，即实现互斥性。但是Java SE5之后，并发包中新增了Lock接口（以及相关实现类）用来实现锁功能。                          
+
+## 3.1 Lock接口
+
+lock更为灵活多样。
+
+使用：
+
+```java
+Lock lock = new ReentrantLock();		// 创建锁对象
+lock.lock();		// 上锁，然后下面一直到释放锁的部分都是互斥的
+try{
+    ....
+}
+finally{
+    lock.unlock();
+}
+```
+
+理解：
+
+1. finally中释放锁，能够保证获取锁之后一定能够去释放，不论try中出现任何问题。
+2. try中不能去获取锁，因为如果在获取锁（自定义锁的实现）时发生了异常，异常抛出的同时，也会导致锁无故释放。
+
+Lock中提供了synchronized没有的功能：
+
+| 特性               | 描述                                                       |
+| ------------------ | ---------------------------------------------------------- |
+| 尝试非阻塞的获取锁 | 如果尝试获取锁，如果成功获得了就持有锁；如果失败了也不阻塞 |
+| 被中断地获取锁     | 获取到锁的线程能够响应中断，会抛出中断异常同时会释放锁     |
+| 超时获取锁         | 在指定的截止时间获取锁，获取不到就直接返回了               |
+
+## 3.2 
+
+
+
+
+
+
+
+# ps：一些混淆的知识点
+
+## 1. synchronized不可中断 & lock可被中断
+
+不可中断的含义：**等待获取锁的时候不可被中断**，即没有获取到锁之前是不会响应中断的，**拿到锁之后可以被中断**。
+
+本质上：`thread.interrupt()`，就只是给中断标志位赋值
+
+所以存在如下情况：
+
+- 该线程处于非阻塞状态
+
+  只是将该线程的中断状态将被设为true，没有其他操作，需要线程代码中自行判断
+
+- 该线程处于阻塞状态：调用了`wait`,`sleep`,`join`方法
+
+  然后会从阻塞状态退出，然后抛出中断异常，并且将中断标志位恢复。
+
+而ReentrantLock可被中断，即在等待锁过程中也可以被中断，但是必须是通过`ReentrantLock.lockInterruptibly()`来获取的锁（普通的lock是无效的）
+
+```java
+private void doAcquireInterruptibly(int arg)
+    throws InterruptedException {
+    // 把线程放进等待队列
+    final Node node = addWaiter(Node.EXCLUSIVE); 
+    boolean failed = true;
+    try {
+        // 自旋
+        for (;;) {
+            // 获取前置节点
+            final Node p = node.predecessor();
+            // 前置节点为头节点 && 当前节点获取到锁
+            if (p == head && tryAcquire(arg)) {
+                // 当前节点设为头节点
+                setHead(node);
+                p.next = null;  // 应用置null,便于GC
+                failed = false;
+                // 结束自旋
+                return;
+            }
+            // 检查是否阻塞线程 && 检查中断状态
+            if (shouldParkAfterFailedAcquire(p, node) &&
+                parkAndCheckInterrupt())
+                // 显式抛中断异常
+                throw new InterruptedException();
+        }
+    } finally {
+        if (failed)
+            cancelAcquire(node);
+    }
+}     
+```
+
+——主要就是Interruptibly是在自旋等待时候还是会去判断是否设置中断标志位了，如果是，那么抛出异常
+
+而如果获取到锁了，就跟synchronized一样由线程代码决定是否中断。
