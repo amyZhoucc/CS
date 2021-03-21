@@ -1,10 +1,3 @@
-# JAVA阅读笔记
-
-
-## 二、面向对象
-
-主要方面：类的扩展、异常、常用基础类
-
 ## 二、泛型与容器
 
 ## （一）泛型
@@ -670,30 +663,6 @@ Integer[] arr = ints.toArray(Integer.class);
 - Java不支持创建泛型数组；
 - 如果要存放泛型对象，可以使用原始类型的数组，或者使用泛型容器；
 - 泛型容器内部使用Object数组，如果要转换泛型容器为对应类型的数组，需要使用反射
-
-## （二）列表&队列
-
-具体见：[容器]()
-
-## （三）Map&Set
-
-具体见：[容器]()
-
-## （四）堆&优先级队列
-
-具体见：[容器]()
-
-## （五）通用容器类&总结
-
-
-
-## 三、动态和函数式编程
-
-## （一）反射
-
-## （二）正则表达式
-
-## （三）函数式编程
 
 
 
@@ -1857,98 +1826,6 @@ ReentrantLock和synchronized的区别：
 
 
 
-## ps：Java的一些包/库函数等
-
-### 1. String类提供的方法汇总
-
-<a name="string_fun"></a>
-
-#### （1）定义：
-
-```java
-String s = "hello world";		// 可以直接定义使用（类似于数组，也可以直接跟数组内容）
-String s = new String("hello");	// 可以用new
-```
-
-可以用+直接连接两个字符串
-
-```Java
-String s1 = "hello";
-s1 += "world";
-```
-
-#### （2）使用
-
-```java
-// 判断字符串是否为空 s.isEmpty()，true——表示为空；false——表示不为空
-public boolean isEmpty();
-
-// 获取字符串长度 s.length()，返回字符串长度
-public int length();
-
-// 取子字符串 s.substring()，从beginIndex~结尾，获取其子串
-public String substring(int beginIndex); 
-//取子字符串,从beginIndex~endIndex,获取其子串
-public String substring(int beginIndex, int endIndex);
-
-//查找字符，s.indexOf()，返回第一个找到的索引位置，没找到返回-1
-public int indexOf(int ch);
-//查找子串，返回第一个找到的索引起始位置，没找到返回-1
-public int indexOf(String str);
-//从后面查找字符
-public int lastIndexOf(int ch);
-//从后面查找子字符串
-public int lastIndexOf(String str);
-
-//判断字符串中是否包含指定的字符序列
-public boolean contains(CharSequence s);
-//判断字符串是否以给定子字符串开头——判断开头是否匹配
-public boolean startsWith(String prefix);
-//判断字符串是否以给定子字符串结尾——判断结尾是否匹配
-public boolean endsWith(String suffix);
-//与其他字符串比较，看内容是否相同——注意是看内容（和包装类的equals类似，重写了Object类方法）
-public boolean equals(Object anObject);
-//忽略大小写比较是否相同
-public boolean equalsIgnoreCase(String anotherString);
-//比较字符串大小，就看第一个不一样的字符对应的数值大小，大了那就是大了；小了就是整个小了
-public int compareTo(String anotherString);
-//忽略大小写比较
-public int compareToIgnoreCase(String str);
-
-//所有字符转换为大写字符，返回新字符串，原字符串不变    
-public String toUpperCase();
-//所有字符转换为小写字符，返回新字符串，原字符串不变
-public String toLowerCase();
-
-//字符串连接，返回当前字符串和参数字符串合并结果
-public String concat(String str);
-//字符串替换，替换单个字符
-public String replace(char oldChar, char newChar);
-//字符串替换，替换字符序列，返回新字符串，原字符串不变
-public String replace(CharSequence target, CharSequence replacement);
-
-//删掉开头和结尾的空格，返回新字符串，原字符串不变
-public String trim();
-//分隔字符串，返回分割后的子字符串数组
-public String[] split(String regex); 
-```
-
-
-
-
-
-[数学包Math](#math)
-
-[数组包Arrays（记得有s！！！）](#arrays)
-
-补充：
-
-| 函数名              | 参数                                            | 返回值 | 作用                         |
-| ------------------- | ----------------------------------------------- | ------ | ---------------------------- |
-| `Arrays.toString()` | int[] arr<br />（可以是其他基本数据类型的数组） | String | 将数组转化为字符串输出[....] |
-|                     |                                                 |        |                              |
-|                     |                                                 |        |                              |
-
 [日期包Date]()
 
 [字符串类String（记得是大写的S！！！）]()
@@ -1972,9 +1849,6 @@ public String[] split(String regex);
    reader.close();								// 将scanner关闭，不再接收输入
    ```
 
-   
-
-3. 
 
 ## pps：Java的常见异常
 

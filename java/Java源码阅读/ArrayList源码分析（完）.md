@@ -2,11 +2,13 @@
 
 总结：
 
-1. ArrayList是**非线程安全的**（即多个线程同时修改里面的内容，会发生并发问题），如果要并发修改，需要使用synchronized进行同步。
+1. ArrayList是**非线程安全的**（即多个线程同时修改里面的内容，会发生并发问题），如果要并发修改，需要使用synchronized进行同步。Vector是最早实现的集合类，基本原理和ArrayList类似，内部使用同步锁实现线程安全。但是性能有所降低。所以不需要考虑并发的情况下，ArrayList优先。
 2. 可能抛出的异常：**ConcurrentModificationException**：并发修改异常。（在迭代器遍历时，如果另外一个线程修改了数组的结构，就会触发该异常）
 3. ArrayList 的**容量会根据列表大小自动调整**，每次扩容大小起码是1.5倍。在添加大量元素之前，可以使用ensureCapacity 方法来保证列表有足够空间存放元素。
-4. ArrayList可以存放null
+4. **ArrayList可以存放null**
 5. 由于内部是数组，所以可以实现O(1)时间的查找
+6. ArrayList是一个**泛型容器**，新建ArrayList需要实例化泛型参数，eg：`ArrayList<Integer>arr = new ArrayList<>();` 
+7. 注意和LinkedList做区分
 
 ## 1. 类头：
 
@@ -19,7 +21,9 @@ public class ArrayList<E> extends AbstractList<E>
 
 继承自：
 
-实现：Serializable：序列化接口；Cloneable：可进行克隆；RandomAccess 也是一个**标记类**（本身没有方法，只是做标记），实现 RandomAccess 表示该类支持快速随机访问
+实现：Serializable：序列化接口；Cloneable：可进行克隆；RandomAccess 也是一个**标记接口**（本身没有方法，只是做标记，**用于声明类的一种属性**），实现 RandomAccess 表示该类支持快速随机访问——实际上什么也没有实现，是底层数据结构决定的，表明可以随机访问
+
+标明了随机访问的优点：可以用于一些**通用的算法代码中，它可以根据这个声明而选择效率更高的实现**。比如，**Collections类中有一个方法binarySearch**，在List中进行二分查找，它的实现代码就**根据list是否实现了RandomAccess而采用不同的实现机制**
 
 ## 2. 静态变量
 
@@ -480,7 +484,7 @@ pps：modCount其他地方都是直接++，而这边是唯一一个地方进行�
 public void clear() {
     modCount++;			// 结构发生改变，就++
 
-    // 将数组中0~size的全部设置为null——表明该
+    // 将数组中0~size的全部设置为null——表明该arraylist为空
     for (int i = 0; i < size; i++)
         elementData[i] = null;
 
@@ -619,13 +623,38 @@ public void sort(Comparator<? super E> c) {
 
 ## 7. 接口实现Iterable
 
+ArrayList --继承--> AbstractList --继承--> AbstractCollection --继承--> Collection -- 继承--> Iterable，所以实际上是ArrayList的超类Collection接口继承了iterable——可以不实现，但是在具体类中必须要给实现了
+
 ```java
 public Iterator<E> iterator() {		// 实现iterator方法，就是实现了Iterable接口
     return new Itr();		// 创建了一个Itr对象——该类就是去实现Iterator接口
 }
 ```
 
-ps：Iterator接口主要是要实现：hasNext()、next()、remove()（有默认方法，可以不实现）、forEachRemaining（有默认方法，可以不实现）
+Iterator接口主要是要实现：hasNext()、next()、remove()（有默认方法，可以不实现，如果不实现，表示不支持在遍历的时候进行删除）、forEachRemaining（有默认方法，可以不实现）
+
+两个Iterator接口的default方法
+
+```java
+/*
+ * @throws IllegalStateException 如果next方法没有被调用，或者该remove方法已经被刚刚的next方法调用过了
+ */
+default void remove() {		// 提供了默认的方法——默认是不允许通过remove去删除元素的
+    throw new UnsupportedOperationException("remove");// 抛出不支持异常，表示该迭代器（具体）不支持该remove操作
+}
+
+/**
+ * 对剩余的每个元素执行给定的操作，直到所有元素都已经操作过了or该操作触发了异常。如果指定了顺序那就按照指定的顺序迭代
+ * 操作产生的异常会上抛给给调用者
+ *
+ * @throws NullPointerException 如果指定的action为null
+ */
+default void forEachRemaining(Consumer<? super E> action) {	// 提供了默认的方法
+    Objects.requireNonNull(action);	// 检查指定的对象引用是否为null（该方法主要是在方法、构造方法中进行参数验证）
+    while (hasNext())
+        action.accept(next());
+}
+```
 
 ```java
 // ArrayList.java中的接口实现
@@ -717,6 +746,10 @@ pps：但是我觉得这个并发限制做的还是存在问题的，只是粗�
 
 ## 8. 接口实现ListIterator
 
+ListIterator扩展了Iterator接口，增加了一些方法，向前遍历、添加元素、修改元素、返回索引位置等
+
+（iterator只可以删除，从前向后遍历）
+
 ```java
 public ListIterator<E> listIterator(int index) {
     if (index < 0 || index > size)
@@ -803,6 +836,18 @@ private class ListItr extends Itr implements ListIterator<E> {	// 继承了上�
 从小方面来看：通过参数`cursor`、`lastRet`实现了既能顺序遍历又能逆序遍历，且删除和添加之后几乎对遍历无影响，真的很厉害啊:+1:
 
 尤其是`lastRet`的使用，限制删除次数
+
+### why要使用迭代器呢？
+
+（如果要实现遍历可以使用普通的get、size这些方法组合形成）
+
+$\because$ foreach语法更为简洁一些，更重要的是，**迭代器语法更为通用，它适用于各种容器类。**
+
+**并且迭代器体现了一种常见设计模式：关注点分离的思想，将数据的实际组织方式与数据的迭代遍历相分离**
+
+需要访问容器元素只需要对Iterator进行引用，**而不需要关注数据结构，可以使用统一的方式访问**——也体现了封装的思想，只需要调用的简单接口就可以实现复杂的操作
+
+并且Iterator接口实现是了解了数据结构的，所以是**实现了迭代器的高效访问方式**，eg：LinkedList的迭代器性能就比自己写要高的多
 
 ## 9. SubList
 
@@ -1280,7 +1325,59 @@ public int hashCode() {					// 实现了Collection的方法，ArrayList是直接
 
 ```
 
-### 总结
+# ArrayList的使用
+
+## 1. 查
+
+```java
+arr.size();			// 结点个数
+arr.isEmpty();		// 判空
+```
+
+```java
+arr.contains(obj);		// 看列表中是否存在该结点
+arr.indexOf(obj);			// 看指定结点的index
+arr.lastIndexOf(obj);		// 从后向前找
+```
+
+```java
+arr.get(1);			// 获得指定下标的内容
+```
+
+```java
+for(Integer num: nums){
+	System.out.println(num);
+}
+
+// 复杂一点，但是操作更灵活的
+Iterator<Integer>it = arr.iterator();
+while(it.hasNext()){
+    System.out.println(it.next());
+}
+```
+
+## 2. 增
+
+```java
+arr.add(obj);		// 默认将值添到数组尾部
+arr.add(1, obj);		// 将值添加到指定的index处，那么这个之后的节点全部需要移动
+```
+
+## 3. 删
+
+```
+arr.remove(3);		// 删除指定下标的结点
+arr.remove(obj);		// 删除具体对象——需要先查找后删除
+arr.clear();		// 清空
+```
+
+### 4. 改
+
+```java
+arr.set(1, obj);		// 指定index修改为obj内容
+```
+
+# 总结
 
 1. 里面大量用到了`Arrays.copyOf(elementData, size);`用来创建一个新的数组，并将原来的数据全部复制过去。因为ArrayList的方法操作的都是同一个内部数组，而所有方法都没有加锁，没有同步机制，所以它是线程不安全的。
 2. `System.arraycopys(elementData, 0, a, 0, size)`：涉及到的是数组拷贝，参数分别是：（原数组，原数组起始位置，目标数组，目标数组起始位置，原数组被复制的长度
@@ -1298,3 +1395,281 @@ public int hashCode() {					// 实现了Collection的方法，ArrayList是直接
 2. https://juejin.cn/post/6844903624062009357
 3. https://juejin.cn/post/6844903614704680974
 4. https://www.huaweicloud.com/articles/3a7734560df006964bc1b6d66115625e.html
+
+# ArrayList实现的接口/抽象类
+
+## 1. Collection
+
+```java
+public interface Collection<E> extends Iterable<E> {
+    int size();
+    boolean isEmpty();
+    boolean contains(Object o);
+    Iterator<E> iterator();
+    Object[] toArray();
+    <T> T[] toArray(T[] a);
+    boolean add(E e);
+    boolean remove(Object o);
+    boolean containsAll(Collection<?> c);
+    boolean addAll(Collection<? extends E> c);
+    boolean removeAll(Collection<?> c);
+    boolean retainAll(Collection<?> c);
+    void clear();
+    boolean equals(Object o);		// ArrayList是直接继承了AbstractList的实现
+    int hashCode();		// ArrayList是直接继承了AbstractList的实现
+    
+    // Java8 后面新增的，为了提高对前面版本的兼容性，所以提供了默认的方法
+    // 实现过滤器式删除，只有通过过滤的元素才会被删除
+    default boolean removeIf(Predicate<? super E> filter) {		// 提供了默认的方法——ArrayList有重写
+        Objects.requireNonNull(filter);
+        boolean removed = false;
+        final Iterator<E> each = iterator();		// 调用迭代器
+        while (each.hasNext()) {
+            if (filter.test(each.next())) {
+                each.remove();
+                removed = true;
+            }
+        }
+        return removed;
+    }
+    default Spliterator<E> spliterator() {			// 提供了默认的方法——有重写
+        return Spliterators.spliterator(this, 0);
+    }
+    default Stream<E> stream() {			// 提供了默认的方法
+        return StreamSupport.stream(spliterator(), false);
+    }
+    default Stream<E> parallelStream() {		// 提供了默认的方法
+        return StreamSupport.stream(spliterator(), true);
+    }
+}
+```
+
+## 2. AbstractCollection
+
+对`Collection`接口均有实现，默认是通过迭代器的实现：
+
+```Java
+int size();		// 没有实现
+boolean isEmpty();		// 间接调用size
+boolean contains(Object o);		// 迭代器实现
+Iterator<E> iterator();		// 没有实现
+Object[] toArray();			// 迭代器实现
+<T> T[] toArray(T[] a);		// 迭代器实现
+boolean add(E e);			// 只是抛出异常——表明如果其子类没有重写该方法，就说明不支持此方法——throw new UnsupportedOperationException();
+boolean remove(Object o);		// 迭代器实现
+
+boolean containsAll(Collection<?> c){	// ArrayList是直接使用的，并没有单独实现，看c对象中的所有元素是否在e中均存在
+    for (Object e : c)			// 本质上还是调用了迭代器			
+        if (!contains(e))	
+            return false;
+    return true;
+}
+
+boolean addAll(Collection<? extends E> c);	// 本质上还是调用了迭代器	
+boolean removeAll(Collection<?> c);		// 迭代器实现
+boolean retainAll(Collection<?> c);	// 迭代器实现
+void clear();	// 迭代器实现
+
+public String toString() {		// 特别的，实现了一个toString的方法——ArrayList是直接使用的，并没有单独实现
+    Iterator<E> it = iterator();		// 迭代器实现
+    if (! it.hasNext())
+        return "[]";
+
+    StringBuilder sb = new StringBuilder();		// StringBuilder对象创建——因为一直需要修改内容
+    sb.append('[');
+    for (;;) {
+        E e = it.next();
+        sb.append(e == this ? "(this Collection)" : e);
+        if (! it.hasNext())
+            return sb.append(']').toString();
+        sb.append(',').append(' ');		// 输出格式[xxx, xxx, ...]
+    }
+}
+```
+
+#### 3. List
+
+是继承了`Collection`，并且增加了其他的方法
+
+内部均没有实现Collection中的方法，只是声明
+
+下面是新增的方法：（注意区分，有些只是参数变化而已，方法名没有变化）
+
+```java
+void add(int index, E element);		// 与add相比多了index参数
+boolean addAll(int index, Collection<? extends E> c);	// 与addAll相比多了index参数
+E remove(int index);		// 与remove相比，从object对象变成了index
+
+E get(int index);
+E set(int index, E element);
+int indexOf(Object o);
+int lastIndexOf(Object o);
+ListIterator<E> listIterator();
+ListIterator<E> listIterator(int index);
+List<E> subList(int fromIndex, int toIndex);
+
+// 默认实现——将每个元素使用一次operator，将运算结果替换原来的值
+default void replaceAll(UnaryOperator<E> operator) {		// ArrayList有重写
+    Objects.requireNonNull(operator);
+    final ListIterator<E> li = this.listIterator();		// 用ListIterator迭代器实现
+    while (li.hasNext()) {
+        li.set(operator.apply(li.next()));
+    }
+}
+
+// 默认实现——排序
+default void sort(Comparator<? super E> c) {		// ArrayList有重写
+    Object[] a = this.toArray();		// 转换成数组
+    Arrays.sort(a, (Comparator) c);		// 调用数组排序，排序方式需要传参Comparator，比较器
+    ListIterator<E> i = this.listIterator();
+    for (Object e : a) {
+        i.next();
+        i.set((E) e);
+    }
+}
+
+// 默认实现——分割器
+default Spliterator<E> spliterator() {
+    return Spliterators.spliterator(this, Spliterator.ORDERED);
+}
+```
+
+#### 3. AbstractList
+
+会去重写AbstractCollection的一些方法，有些是默认继承的；并且实现了AbstractCollection没有实现的Collection中的方法；增加了几个方法和内部类——主要是为了实现：`ListIterator`、`RandomAccess`
+
+```java
+// 继承AbstractCollection，并重写的
+public boolean add(E e);		// 去调用下面的add
+public boolean addAll(int index, Collection<? extends E> c);		// 重写，优化了
+public void clear();		// 调用了下面的removeRange
+
+public Iterator<E> iterator() {		// 实现了
+    return new Itr();
+}
+private class Itr implements Iterator<E> {}	// 实现了方法内部类Iterator
+
+public boolean equals(Object o);			// 实现了Collection的方法，ArrayList是直接使用的
+public int hashCode();				// 实现了Collection的方法，ArrayList是直接使用的
+```
+
+```java
+// 继承List的：
+abstract public E get(int index);		// 未实现
+public E set(int index, E element);		// 只是抛出异常——表明如果其子类没有重写该方法，就说明不支持此方法——throw new UnsupportedOperationException();
+public void add(int index, E element);// 只是抛出异常——表明如果其子类没有重写该方法，就说明不支持此方法——throw new UnsupportedOperationException();
+public E remove(int index);	// 只是抛出异常——表明如果其子类没有重写该方法，就说明不支持此方法——throw new UnsupportedOperationException();
+
+public int indexOf(Object o);		// 迭代器实现
+public int lastIndexOf(Object o);	// 迭代器实现
+
+protected void removeRange(int fromIndex, int toIndex);	// 迭代器实现
+
+public ListIterator<E> listIterator() {		// 实现了
+    return listIterator(0);
+}
+private class ListItr extends Itr implements ListIterator<E> {}	// 实现了该方法内部类
+
+public List<E> subList(int fromIndex, int toIndex);		// 实现了
+
+class SubList<E> extends AbstractList<E>{}	// 实现了方法内部类
+
+class RandomAccessSubList<E> extends SubList<E> implements RandomAccess{};		// 实现了方法内部类
+```
+
+# ps：面试的考点
+
+## 1. fail-fast 
+
+### （1）fail-fast解释
+
+在Java的注释经常可以碰到`fail-fast`，这是一种机制
+
+wiki的解释：在系统设计中，快速失效系统一种可以立即报告任何可能表明故障的情况的系统。常用来停止当前正常的操作，而不是试图继续执行可能存在缺陷的故障，让系统自行触发异常而返回
+
+——即**系统设计的时候优先考虑异常情况，一旦探测到异常（但是当前还未触发异常），直接停止操作并上报**（有点像，写leetcode的时候处理特殊情况，因为前面不处理，继续执行下去可能会发生越界等异常）
+
+通常说的**`fail-fast`就是Java的Collection中的错误检测机制**
+
+目的是：多个线程同时对集合的结构进行修改，就会触发fail-fast机制，这时候就会抛出`ConcurrentModificationException`（并发修改异常）
+
+这边存在一个陷阱：设计集合的fail-fast的初心就是为了防止多线程同时去修改集合的结构。但是由于实现机制导致：**在使用迭代器进行遍历操作的时候，如果使用外部的remove/add等操作，那么就会触发CME**——具体原因看源码（主要是由于modCount和exceptModCount不匹配引起的），所以并没有出现并发，但是引起了并发异常——解决方法：调用迭代器提供的remove方法（ListIterator还提供add等方法）
+
+ps：解释一下这边的特定并发操作：一个或者多个线程在遍历操作该集合，操作可以是只读、也可以是读写都存在。而抛出的异常CME，是并发修改，即在一个或多个线程迭代过程中，**存在2个及以上的线程去修改该集合的结构**
+
+### （2）对应的：fail-safe
+
+java实现了`fail-safe`机制的集合类，这些集合在遍历时，不是**直接在其本身上操作，而是在副本上面操作**
+
+`java.util.concurrent`包下的容器都是fail-safe的，可以在多线程下并发使用，并发修改。同时也可以在foreach中进行add/remove ——但是由于是副本，那么之后对内容的修改，迭代器无法访问到
+
+eg：ArrayList对应的线程安全的类是：`CopyOnWriteArrayList`
+
+（博客后面还有关于`copyonwrite`的知识，后面学了并发知识之后再来补充）
+
+参考内容：
+
+https://juejin.cn/post/6844903824709287943
+
+## 2. 遍历时修改ArrayList的正确操作
+
+根据实际经验，如果运行如下代码
+
+```java
+ArrayList<Integer>arr = new ArrayList<>(Arrays.asList(1,4,3,2,5,5,7,8));
+for(int i = 0; i < arr.size(); i++){
+    if(arr.get(i) == 5){
+        arr.remove(i);
+    }
+}
+
+// >> {1, 4, 3, 2, 5, 7, 8}，可以发现少删除了一个5，这是因为arr删除前一个5之后，i就指向了后一个的5，而此时i++，就导致后一个直接被忽略了
+```
+
+——一定会使部分元素没有被遍历到（删除结点后面紧跟的元素被忽略了）
+
+主要原因：当前结点被删除，那么i之后的节点会向前移动一位，此时i指向的就是之前i+1的结点，所以它会被忽略。
+
+方法是，**删除后，添加i--**，类似于跳过本轮循环，那么下一次就能遍历到
+
+参考很多解法，都建议从后向前遍历：——那么移动发生在遍历过的地方，不会忽略
+
+```java
+for(int i = arr.size() - 1; i >= 0; i--){
+	if(arr.get(i) == 5){
+        arr.remove(5);
+    }
+}
+```
+
+下边一种是由于fail-fast引起的错误：
+
+```java
+for(Integer num : nums){
+	if(num == 5){
+        nums.remove(num);
+    }
+}
+```
+
+由于foreach会去调用arrayList提供的迭代器，而迭代器不允许在遍历期间，去调用外部的add、remove等方法改变数组的结构状态，会引起fail-fast。所以这个代码是会抛出异常的。
+
+方法是：删了一个就跑，直接break结束循环
+
+还有一种，使用迭代器内部的remove方法：但是这个遍历较为麻烦：
+
+```java
+Iterator<Integer>it = arr.iterator();		// 获得arrayList的迭代器
+while(it.hasNext()){
+    if(it.next() == 5){
+        it.remove();			// 这个就只能删除当前结点，而不能指定结点
+    }
+}
+// >> 1,4,3,2,7,8
+```
+
+需要注意：一个循环中不能多次调用next方法，因为next方法每次都会将结点向后移动一个
+
+参考：
+
+1. https://juejin.cn/post/6844904038442467336

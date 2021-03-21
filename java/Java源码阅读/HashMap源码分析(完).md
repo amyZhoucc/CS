@@ -674,9 +674,23 @@ final Node<K,V> removeNode(int hash, Object key, Object value,
 }
 ```
 
+还有一个clear方法，就是将每个index的内容全部清掉。GC会对没有引用的链表回收。
+
+```java
+public void clear() {
+    Node<K,V>[] tab;
+    modCount++;
+    if ((tab = table) != null && size > 0) {
+        size = 0;
+        for (int i = 0; i < tab.length; ++i)
+            tab[i] = null;
+    }
+}
+```
+
 ### 5. 红黑树相关（链表树化、红黑树链化、扩容拆分）
 
-不涉及到红黑树的实现等，只是将整体思路：
+不涉及到红黑树的实现等，只是讲整体思路：
 
 #### 链表树化
 
@@ -886,7 +900,7 @@ hashMap.put(key, value);
 hashMap.get(key);
 ```
 
-ps：遍历哈希表：
+ps：遍历哈希表：注意遍历的顺序是乱序的
 
 一般用forEach
 
@@ -917,10 +931,25 @@ hashMap.size();
 
 ```
 hashMap.containsKey(key);				// 直接通过key定位到index，然后查链表，效率较高
-hashMap.containsValue(value);			// 只能通过遍历
+hashMap.containsValue(value);			// 只能通过遍历O(N)
 
 hashMap.isEmpty();			// 判空，直接通过size判断即可
 ```
+
+注意如果在遍历的时候进行删除，需要注意不能触发fail-fast
+
+只能用迭代器：
+
+```java
+Iterator<Integer> it = hashMap.keySet().iterator();
+while(it.hasNext()){			// 遍历key的集合
+    if(it.next() == 5){
+        it.remove();		// 会将这个键值对删除
+    }
+}
+```
+
+其他的利用上面的遍历方法都会抛出CME
 
 ## 4. 删
 

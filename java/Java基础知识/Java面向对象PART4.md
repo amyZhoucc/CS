@@ -530,3 +530,98 @@ public static void main(String[] args) throws NullPointerException, NumberFormat
 对于程序员，关注程序错误和第三方错误，那么应该要报告尽量完整的细节，包括异常栈和异常链，以便快速定位错误
 
 异常处理一般：如果自己能处理，就在这一层处理了；如果不能完全解决，应该上抛；——一定要有一层处理异常
+
+# ps：异常额外知识
+
+## 1. 异常链
+
+<a name="5"></a>
+
+**定义**：**捕获一个异常后抛出另一个异常**（发生在catch里面），并且把**原始异常信息保存下来**（通过创建新的异常对象，并且传参message和cause），这被称为异常链。
+
+```java
+public class Main {
+    public static void a() throws MyException {
+        try {
+            if(true) throw new IOException();		// 直接抛出异常
+        }catch (IOException e){			// 抛出的异常被接收
+            throw new MyException("IO exception", e);	// 又抛出新的异常，构造异常链
+        }		// => 因为捕获异常而产生新的异常
+    }
+    public static void main(String[] args){
+        try {
+            a();		// 去调用函数a
+        }catch (MyException e){		// 接收了a中抛出的异常
+            e.printStackTrace();	// 输出异常栈
+        }
+    }
+}
+```
+
+输出：
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20201213164038980.png" alt="image-20201213164038980" style="zoom:67%;" />
+
+"IO错误"是产生`MyException`的原因，而`MyException`产生的原因是触发`IOException`
+
+```java
+public class Main {
+    public static void a() throws MyException {
+        try {
+            if(true) throw new IOException();
+        }catch (IOException e){
+            throw new MyException("IO错误", e);
+        }
+    }
+    public static void main(String[] args){
+        try {
+            a();
+        }catch (MyException e){
+            Throwable cause = e.getCause();	// 获得是e的cause——异常信息
+            cause.printStackTrace();		// 索引打印的是IOException的异常栈
+        }
+    }
+}
+```
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20201213165100701.png" alt="image-20201213165100701" style="zoom:67%;" />
+
+多个异常链：
+
+```java
+public class Main {
+    public static void b()throws ClassNotFoundException{
+        try{
+            if(true) throw new MyException();	// 抛出异常
+        }catch (MyException e){					// 捕获异常
+            // cause = MyException
+            throw new ClassNotFoundException("b方法产生的异常", e);//重新抛出新的异常
+        }
+    }
+    public static void a() throws IOException {
+        try {
+            b();
+        }catch (ClassNotFoundException e){		// 捕获b产生的新异常
+            // cause = IOException
+            throw new IOException("a方法产生的异常", e);	// 重新抛出新异常
+        }
+    }
+    public static void main(String[] args){
+        try {
+            a();
+        }catch (IOException e){		// 捕获异常
+            e.printStackTrace();	// 打印出异常栈
+        }
+    }
+}
+```
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20201213165615610.png" alt="image-20201213165615610" style="zoom:67%;" />
+
+先弹出：最上层的异常：由a产生的IO异常
+
+接着IO异常是由b产生的类异常
+
+而b产生的类异常是最底层的：MyException产生
+
+——由此构成了一条链

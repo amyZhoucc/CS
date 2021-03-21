@@ -1,12 +1,22 @@
 ## ArrayDeque源码分析
 
-本质上是一个循环数组
+## 概述
 
 **像是一个ArrayList和LinkedList的集合，底层是ArrayList一样的数组，通过不同的实现方式，上层对外的接口又都是LinkedList一致的**
 
-兼具了数组的查询高效，又有高效的增、删特点
+**兼具了数组的查询高效，又有高效的增、删特点**
 
 所以，这边应该会和ArrayList和LinkedList都进行对比的基础上看源码的实现
+
+1. ArrayDeque不允许元素存在null
+2. 底层使用数组存储数据的，本质上就是一个循环数组，那么能够实现Deque的方法
+3. 默认给的容量为16（无参构造方法也是），每次扩容都是2的幂次（主要是为了方便计算）
+4. 注意：循环数组，一定是从head开始tail结束，中间不存在空结点（如果存在空结点，一定是反方向）
+5. 为了实现循环操作，**一定存在一个结点空间的浪费**——作为满的标志
+6. **ArrayDeque没有索引的概念**，不能通过index找元素，只能在首尾 or 具体的对象值来进行操作；delete(i)是因为已经确定了删除的了位置，其i也不代表是index
+7. 时间效率方面：
+   1. 两端添加、删除元素的效率很高，添加N个元素的效率为O(N)。扩容的开销可以被均摊，所以均摊时间复杂度为O(1)
+   2. 根据元素内容查找和删除的效率比较低，为O(N)
 
 ## 1. 类头
 
@@ -15,10 +25,16 @@ public class ArrayDeque<E> extends AbstractCollection<E>
                            implements Deque<E>, Cloneable, Serializable
 ```
 
-## 2. 静态变量（暂无研究）
+实现了双向队列
+
+## 2. 静态变量
 
 ```java
 private static final long serialVersionUID = 2340985798034038923L;
+```
+
+```java
+private static final int MIN_INITIAL_CAPACITY = 8;		// 数组的最小容量（ArryaList是默认给一个空数组）
 ```
 
 ## 3. 实例变量
@@ -27,11 +43,9 @@ private static final long serialVersionUID = 2340985798034038923L;
 transient Object[] elements;		// 数组存放元素
 transient int head;		// 指示数组头的位置——LinkedList有的——是实现高效删除的关键
 transient int tail;		//  指示数组尾的位置，是指向下一个空的位置——LinkedList有的，但是含义稍有不同
-
-private static final int MIN_INITIAL_CAPACITY = 8;		// 数组的最小容量（ArryaList是默认为0）
 ```
 
-——循环数组必须要时刻留下一个空位，tail指向下一个空位，如果tail==head，表示数组已经存满了，马上要扩容而不能等待下一次再扩容
+——**循环数组必须要时刻留下一个空位**，tail指向下一个空位，如果tail==head，表示数组已经存满了，马上要扩容而不能等待下一次再扩容
 
 ps：实例变量中没有size，来存放元素个数，如果要知道元素个数，可以通过head和tail的计算得到；
 
@@ -56,11 +70,19 @@ public ArrayDeque(Collection<? extends E> c) {
 }
 ```
 
+辅助方法：——本质上还是调用下面的方法
+
+```java
+private void allocateElements(int numElements) {
+    elements = new Object[calculateSize(numElements)];
+}
+```
+
 ## 4. 静态方法（提升幸福品质）
 
 计算容量
 
-这个是计算数组应该的大小：**数组的大小都是大于当前数组长度的2的幂次**。主要是为了后面的位计算方便——关键方法
+这个是计算数组应该的大小：**数组的大小都是不小于当前数组长度的2的幂次**。主要是为了后面的位计算方便——关键方法（哈希里面也是如此计算的）
 
 ```java
 private static int calculateSize(int numElements) {
@@ -86,13 +108,15 @@ private static int calculateSize(int numElements) {
 
 ## 5. 实例方法
 
-接口同LinkedList，都是有3套方法——deque、stack、queue
+**接口同LinkedList，都是有3套方法——deque、stack、queue**
 
 ### （1）增
 
 add当数组容量超过2^30以上，就会因为int溢出，而触发`IllegalStateException`
 
 如果add的元素是null，会抛出异常：`NullPointerException`
+
+在头部增加，那么**head向前（循环）移动**
 
 ```java
 // 数组头部增加一个元素——能进来说明此时数组还未满，出去之前会判断是否满了，满了就扩容，保证下一次进来还是有空间存放的
@@ -105,11 +129,15 @@ public void addFirst(E e) {
 }
 ```
 
-ps：`head = (head - 1) & (elements.length - 1)`：这句是关键，主要就是来确定要插入的索引位置
+理解：
 
-由于elements.length=2^n，那么elements.length-1 = 2^n-1，那么低位全部为1，高位全部为0
+1. 可以发现，是写插入后扩容；所以每次该方法返回前都能保证该数组还有容量
 
-如果head-1>=0，那么就是其本身。而如果head-1 = -1（不可能是其他负数），那么就是elements.length-1，就是数组的最后一个位置——符合要求。
+2. `head = (head - 1) & (elements.length - 1)`：这句是关键，主要就是来确定要插入的索引位置——就是取余操作
+
+   由于elements.length=2^n，那么$elements.length-1 = 2^n-1$，那么低位全部为1，高位全部为0
+
+   如果head-1>=0，那么就是其本身。而如果head-1 = -1（不可能是其他负数），那么就是elements.length-1，就是数组的最后一个位置——符合要求。
 
 **这边运用了2的幂次的特性和位操作，使计算得到的值限制在0~2^n-1范围内，并且对于边界处理的是正确的**
 
@@ -118,6 +146,8 @@ ps：`head = (head - 1) & (elements.length - 1)`：这句是关键，主要就�
 答：不可以，如果作为边界情况，例如-1=11....11&len=len——符合要求；0&len=0——符合要求；len+1&len——不符合要求了（获得是len+1的最高位1出现的位置）；其他数& len $\neq$其他数——不符合要求
 
 ——所以只有2^n-1才有如此特性才能满足要求
+
+在尾部添加，tail向后（循环）移动
 
 ```java
 // 在数组尾部添加一个元素
@@ -130,14 +160,14 @@ public void addLast(E e) {
 }
 ```
 
-ps：`tail = (tail + 1) & (elements.length - 1)`：这句同上
+ps：`tail = (tail + 1) & (elements.length - 1)`：这句同上——取余
 
 tail+1<length，那么计算得到其本身；tail+1=length，那么计算得到0——符合要求
 
 限制了tail在0~length-1的范围内移动
 
 ```java
-public boolean offerFirst(E e) {	// 传参为null时抛出异常
+public boolean offerFirst(E e) {	// 传参为null时抛出异常——Deque的方法
     addFirst(e);
     return true;
 }
@@ -151,14 +181,16 @@ public boolean add(E e) {		// 等同于尾巴上添加元素
     return true;
 }
 // queue方法实现
-public boolean offer(E e) {
+public boolean offer(E e) {			// Queue的方法
     return offerLast(e);
 }
-// stack方法实现（不是真实的stack类，而是deque提供的）
+// stack方法实现（不是真实的stack类，而是deque提供的）		// stack的方法
 public void push(E e) {
     addFirst(e);
 }
 ```
+
+总结：本质上都是调用了addFirst、addLast方法，如果出现添加null的情况，会抛出异常。容量大小上限是调用了其他方法抛出的。
 
 ### （2）删
 
@@ -205,37 +237,6 @@ public E pollLast() {
     return result;
 }
 
-public boolean removeFirstOccurrence(Object o) {
-    if (o == null)
-        return false;
-    int mask = elements.length - 1;		// 掩码
-    int i = head;			// 从前向后找
-    Object x;
-    while ( (x = elements[i]) != null) {	// 循环终止条件是出现null（所以元素不能存在null，将元素删除后要将对应位置赋值为null）	
-        if (o.equals(x)) {
-            delete(i);		// 调用删除操作——从中间删除
-            return true;
-        }
-        i = (i + 1) & mask;
-    }
-    return false;
-}
-public boolean removeLastOccurrence(Object o) {
-    if (o == null)
-        return false;
-    int mask = elements.length - 1;
-    int i = (tail - 1) & mask;
-    Object x;
-    while ( (x = elements[i]) != null) {
-        if (o.equals(x)) {
-            delete(i);		// 调用删除操作——从中间删除
-            return true;
-        }
-        i = (i - 1) & mask;
-    }
-    return false;
-}
-
 // collection方法实现
 public E remove() {		// 删头
     return removeFirst();
@@ -275,6 +276,85 @@ public void clear() {			// 清空
 
 - 时间性能比ArrayList好（除了尾巴删除是O(1)，其余均因要移位和查找都是O(N)），
 - 和LinkedList性能基本一样：首尾O(1)，中间，查找时间也是O(N)，删除ArrayDeque耗时多一点，但是总时间复杂度未变为O(N)；区别是，**如果是指定index删除：LinkedList是O(1)，ArrayDeque是O(N/2)**
+
+其他remove方法：
+
+```java
+public boolean removeFirstOccurrence(Object o) {
+    if (o == null)
+        return false;
+    int mask = elements.length - 1;		// 掩码
+    int i = head;			// 从前向后找
+    Object x;
+    while ( (x = elements[i]) != null) {	// 循环终止条件是出现null（所以元素不能存在null，将元素删除后要将对应位置赋值为null）	
+        if (o.equals(x)) {
+            delete(i);		// 调用删除操作——从中间删除
+            return true;
+        }
+        i = (i + 1) & mask;		// 指向下一个结点
+    }
+    return false;
+}
+public boolean removeLastOccurrence(Object o) {
+    if (o == null)
+        return false;
+    int mask = elements.length - 1;
+    int i = (tail - 1) & mask;
+    Object x;
+    while ( (x = elements[i]) != null) {
+        if (o.equals(x)) {
+            delete(i);		// 调用删除操作——从中间删除
+            return true;
+        }
+        i = (i - 1) & mask;
+    }
+    return false;
+}
+```
+
+从中间删除的通用方法：
+
+```java
+// 根据索引位置元素从数组中删除——比较麻烦，看i离head和tail哪个更近——减少移动次数，离head近，那么head向后移动一位；tail近，那么tail向前移动一位
+private boolean delete(int i) {	
+    checkInvariants();			// (5)
+    final Object[] elements = this.elements;
+    final int mask = elements.length - 1;
+    final int h = head;
+    final int t = tail;
+    final int front = (i - h) & mask;	// i位置和head的距离
+    final int back  = (t - i) & mask;	// i位置和tail的距离
+
+    // Invariant: head <= i < tail mod circularity
+    if (front >= ((t - h) & mask))			// 并发的问题
+        throw new ConcurrentModificationException();
+
+    // Optimize for least element motion
+    if (front < back) {		// i和head距离近
+        if (h <= i) {		// h和i同方向，那么h~i-1复制到h+1~i处
+            System.arraycopy(elements, h, elements, h + 1, front);
+        } else { // h和i不同方向（i和t同方向），那么[0,i-1]的移动到[1, i]，len-1的元素复制到0，[head, len-1)的元素复制到[head+1, len-1]
+            System.arraycopy(elements, 0, elements, 1, i);
+            elements[0] = elements[mask];
+            System.arraycopy(elements, h, elements, h + 1, mask - h);
+        }
+        elements[h] = null;		// 将原来的head赋值为null
+        head = (h + 1) & mask;
+        return false;
+    } else {			// i和tail距离近
+        if (i < t) { // i在t前——同方向，那么就将i+1~tail的节点复制到i~tail-1
+            System.arraycopy(elements, i + 1, elements, i, back);
+            tail = t - 1;
+        } else { // i不在t的同方向（i和head在同方向），那么将[i+1, len)的元素复制到[i, len-1)处，0的元素复制到len-1处，[1, tail)的元素复制到[0,tail-1)处
+            System.arraycopy(elements, i + 1, elements, i, mask - i);
+            elements[mask] = elements[0];
+            System.arraycopy(elements, 1, elements, 0, t);
+            tail = (t - 1) & mask;
+        }
+        return true;
+    }
+}
+```
 
 ### （3）改
 
@@ -351,11 +431,9 @@ ps：size()方法可以学学！！！
 
 ### （5）辅助方法（高效的关键）
 
-```java
-private void allocateElements(int numElements) {	// 根据numElements计算适合的数组长度，并创建新的数组
-    elements = new Object[calculateSize(numElements)];
-}
+2倍扩容
 
+```java
 // 扩容操作：原来长度*2，并且将原来的内容复制过去
 private void doubleCapacity() {		// 两倍的扩容
     assert head == tail;		// 只有当head和tail相遇的时候才能继续执行，不相遇那么数组还未满，会抛出AssertionError
@@ -373,6 +451,11 @@ private void doubleCapacity() {		// 两倍的扩容
     tail = n;
 }
 
+```
+
+数组的复制，复制到指定的数组中（默认a是足够长的）
+
+```java
 // 将本对象的数组复制到a中
 private <T> T[] copyElements(T[] a) {
     if (head < tail) {				// 不存在分布在数组两边的情况——直接从head~tail-1复制过去
@@ -384,47 +467,9 @@ private <T> T[] copyElements(T[] a) {
     }
     return a;
 }
+```
 
-// 根据索引位置元素从数组中删除——比较麻烦，看i离head和tail哪个更近——减少移动次数，离head近，那么head向后移动一位；tail近，那么tail向前移动一位
-private boolean delete(int i) {	
-    checkInvariants();
-    final Object[] elements = this.elements;
-    final int mask = elements.length - 1;
-    final int h = head;
-    final int t = tail;
-    final int front = (i - h) & mask;	// i位置和head的距离
-    final int back  = (t - i) & mask;	// i位置和tail的距离
-
-    // Invariant: head <= i < tail mod circularity
-    if (front >= ((t - h) & mask))
-        throw new ConcurrentModificationException();
-
-    // Optimize for least element motion
-    if (front < back) {		// i和head距离近
-        if (h <= i) {		// h和i同方向，那么h~i-1复制到h+1~i处
-            System.arraycopy(elements, h, elements, h + 1, front);
-        } else { // h和i不同方向（i和t同方向），那么[0,i-1]的移动到[1, i]，len-1的元素复制到0，[head, len-1)的元素复制到[head+1, len-1]
-            System.arraycopy(elements, 0, elements, 1, i);
-            elements[0] = elements[mask];
-            System.arraycopy(elements, h, elements, h + 1, mask - h);
-        }
-        elements[h] = null;		// 将原来的head赋值为null
-        head = (h + 1) & mask;
-        return false;
-    } else {			// i和tail距离近
-        if (i < t) { // i在t前——同方向，那么就将i+1~tail的节点复制到i~tail-1
-            System.arraycopy(elements, i + 1, elements, i, back);
-            tail = t - 1;
-        } else { // i不在t的同方向（i和head在同方向），那么将[i+1, len)的元素复制到[i, len-1)处，0的元素复制到len-1处，[1, tail)的元素复制到[0,tail-1)处
-            System.arraycopy(elements, i + 1, elements, i, mask - i);
-            elements[mask] = elements[0];
-            System.arraycopy(elements, 1, elements, 0, t);
-            tail = (t - 1) & mask;
-        }
-        return true;
-    }
-}
-
+```java
 // 这个主要是在检查tail、head指向的元素和其周围的元素是否正确：
 // 数组为空时，head和tail应该相等，且head指向null；数组不为空时，head指向不为空，head-1的指向为空（非满状态），tail应该为空，tail-1应该不为空——符合循环数组的要求
 private void checkInvariants() {
@@ -542,11 +587,11 @@ private class DeqIterator implements Iterator<E> {
     }
 
     public void remove() {
-        if (lastRet < 0)			// 说明已经被删除过，或是初始的时候没有去调用next就去删除
+        if (lastRet < 0)			// 说明已经被删除过，或是初始的时候没有去调用next就去删除——抛出异常
             throw new IllegalStateException();
         if (delete(lastRet)) { // if left-shifted, undo increment in next()
             cursor = (cursor - 1) & (elements.length - 1);	// lastret=next-1，而lastret被删除了，那么lastret=本来的next，那么next也需要更新到lastret=本来的next
-            fence = tail;		// tail-1，那么需要更新fence
+            fence = tail;		// 删除了之后 tail也更新了，所以fence也要更新
         }
         lastRet = -1;
     }
@@ -697,9 +742,3 @@ static final class DeqSpliterator<E> implements Spliterator<E> {
     }
 }
 ```
-
-
-
-## 6. 总结
-
-ArrayList和LinkedList都是允许元素存在null的，但是ArrayDeque不允许

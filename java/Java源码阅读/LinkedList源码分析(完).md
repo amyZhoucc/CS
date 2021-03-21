@@ -2,12 +2,30 @@
 
 本篇，是在分析了ArrayList的基础上，所以可能有些对比思考，有些一致的操作可能就忽略了
 
+## 概述
+
+1. LinkedList实现了Deque和Queue接口，可以按照**队列、栈和双端队列**的方式进行操作（ArrayList不行）
+2. LinkedList底层是用链表实现的，**双向链表**，基本数据元素是Node结点
+3. LinkedList也是**支持元素值为null**，会对null进行特殊处理
+4. LinkedList还是有index概念的
+5. 时间复杂度：
+   1. 不可以随机访问，按照索引位置访问效率比较低，必须从头或尾顺着链接找，效率为O(N/2)
+   2. 不管列表是否已排序，只要是按照内容查找元素，效率都比较低，必须逐个比较，效率为O(N)
+   3. 在两端添加、删除元素的效率很高，为O(1)
+   4. 在中间插入、删除元素，要先定位，效率比较低，为O(N)，但修改本身的效率很高，效率为O(1)
+
+注意，这边的栈和Stack不一样
+
+Stack：它是Vector的子类，没有实现Deque，是线程安全的，通过`synchronized`实现的。如果需要线程安全，那么需要使用Stack
+
 ## 1. 类头
 
 ```java
 public class LinkedList<E> extends AbstractSequentialList<E>
     implements List<E>, Deque<E>, Cloneable, java.io.Serializable
 ```
+
+特殊的：**实现了Deque和Queue接口，可以按照队列、栈和双端队列的方式进行操作**
 
 ## 2. 静态变量
 
@@ -60,7 +78,24 @@ public LinkedList(Collection<? extends E> c) {	// 带参数的构造方法
 
 ## 6. 实例方法
 
+### （0）辅助方法
+
+边界检查：
+
+```java
+private void checkPositionIndex(int index) {
+    if (!isPositionIndex(index))
+        throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+}
+
+private boolean isPositionIndex(int index) {
+    return index >= 0 && index <= size;
+}
+```
+
 ### （1）增
+
+插入：默认插入到链表尾；插入到指定结点的前面
 
 ```java
 // 链表尾插入节点
@@ -77,7 +112,11 @@ public void add(int index, E element) {
     else
         linkBefore(element, node(index));
 }
+```
 
+将集合对象插入到链表的后面
+
+```java
 public boolean addAll(Collection<? extends E> c) {		// 将集合c的元素全部加入到当前对象的链表尾
     return addAll(size, c);		// 就是去调用下面的方法
 }
@@ -87,7 +126,7 @@ public boolean addAll(Collection<? extends E> c) {		// 将集合c的元素全部
 public boolean addAll(int index, Collection<? extends E> c) {	
     checkPositionIndex(index);		// 判断参数是否合法0~size范围内？
 
-    Object[] a = c.toArray();	// 转换成数组后再操作
+    Object[] a = c.toArray();	// 转换成数组后再操作——调用它的toArray()方法
     int numNew = a.length;
     if (numNew == 0)		// 数组长度为0——数据为空，直接返回失败
         return false;
@@ -151,13 +190,13 @@ public boolean remove(Object o) {		// 删除指定对象——提供的是item�
     }
     return false;
 }
+```
 
+清空链表：
+
+```JAVA
 public void clear() {
-    // Clearing all of the links between nodes is "unnecessary", but:
-    // - helps a generational GC if the discarded nodes inhabit
-    //   more than one generation
-    // - is sure to free memory even if there is a reachable Iterator——与JVM的垃圾回收相关
-    for (Node<E> x = first; x != null; ) {	// 从链表头开始遍历到第一个null之前（注意node=null和node.item=null不等价）
+    for (Node<E> x = first; x != null; ) {	// 从链表头开始遍历到null（注意node=null和node.item=null不等价）——表示链表结束
         Node<E> next = x.next;
         x.item = null;		// 将其全部置为null，然后让GC去处理它们——虽然没有必要清除链接，但是清除了能加快回收
         x.next = null;
@@ -168,10 +207,14 @@ public void clear() {
     size = 0;
     modCount++;
 }
+```
 
+删除第一个遇到的值一样的结点
+
+```JAVA
 // 删除第一个遇到值为o的节点
 public boolean removeFirstOccurrence(Object o) {
-    return remove(o);		// 从头开始找并删除
+    return remove(o);		// 默认的方法就是从头开始找并删除
 }
 // 删除最后一个遇到的值为o的节点
 public boolean removeLastOccurrence(Object o) {		// 从尾部开始找并删除
@@ -208,28 +251,12 @@ public E set(int index, E element) {		// 将对应索引的节点值进行修改
 
 ### （4）查
 
+查某个结点是否在链表中 or 链表中的index，O(N)
+
 ```java
-// 获得对应索引的元素值——注意获得是值
-public E get(int index) {
-    checkElementIndex(index);		
-    return node(index).item;		// 从头or尾开始遍历查找
-}
-
-// 在链表中查找指定索引的元素——返回该节点，注意返回的是节点，而不是节点的值
-Node<E> node(int index) {		
-    // assert isElementIndex(index);
-
-    if (index < (size >> 1)) {		// 如果index未到链表长度的一半，那么从头开始找——找后继
-        Node<E> x = first;
-        for (int i = 0; i < index; i++)
-            x = x.next;
-        return x;
-    } else {				// 如果index>=链表长度的一半，那么从尾巴开始找——找前驱
-        Node<E> x = last;
-        for (int i = size - 1; i > index; i--)
-            x = x.prev;
-        return x;
-    }
+// 判断该节点是否存在于链表中
+public boolean contains(Object o) {
+    return indexOf(o) != -1;		// 本质上就是去调用indexOf去找索引值，返回非负值就说明存在
 }
 
 // 获得该元素”值“所在的链表的位置——主要是为了统一（其实链表不应该计算index值的），index还是从0开始计算的（为了容器的统一）
@@ -250,7 +277,11 @@ public int indexOf(Object o) {
     }
     return -1;
 }
+```
 
+从尾巴开始找
+
+```java
 public int lastIndexOf(Object o) {		// 同上，尾巴开始找，也是从0开始计算的，所以需要先减后判断
     int index = size;
     if (o == null) {
@@ -268,12 +299,17 @@ public int lastIndexOf(Object o) {		// 同上，尾巴开始找，也是从0开�
     }
     return -1;
 }
+```
 
-// 判断该节点是否存在于链表中
-public boolean contains(Object o) {
-    return indexOf(o) != -1;		// 本质上就是去调用indexOf去找索引值，返回非负值就说明存在
+```java
+// 获得对应索引的元素值——注意得到的是值
+public E get(int index) {
+    checkElementIndex(index);		
+    return node(index).item;		// 从头or尾开始遍历查找
 }
 ```
+
+理解：这边的`x!=null`是指结点不为空，是链表的边界判断，和**结点值可以为null**不矛盾。
 
 ps：查找时间复杂度为O(N/2)=O(N)
 
@@ -285,9 +321,11 @@ public int size() {
 
 ### （5）栈Stack特点的操作
 
-后进先出
+后进先出——认为链表头就是栈顶，**入栈出栈都在链表头**
 
 需要记忆方法名字：`push()`|`pop()`|`peek()`
+
+——pop：如果栈为空，则会抛出异常；peek：如果栈为空，返回null，不会抛出异常；push：如果栈空间有限，那么可能存在栈满的异常抛出
 
 ```java
 // 查看栈顶元素的值——注意不是返回节点，而是返回节点的值，栈为空直接返回null，不会抛出异常（与getFirst不同）
@@ -312,7 +350,7 @@ public E pop() {
 
 先进先出
 
-需要记忆的方法：`peek()`|`element()`|`poll()`|`remove()`|`offer()`
+需要记忆的方法：`peek()`|`element()`|`poll()`|`remove()`|`offer()`|`add()`
 
 ```java
 // 查看队列头的值——注意不是返回节点，而是返回节点的值，队列为空直接返回null，不会抛出异常（与getFirst不同）
@@ -421,6 +459,8 @@ public E pollLast() {
 
 ### （8）内部私有操作——辅助方法
 
+将节点插入到头/尾
+
 ```java
 private void linkFirst(E e) {	// 将该节点插入到链表头前，作为新链表头节点
     final Node<E> f = first;
@@ -445,7 +485,11 @@ void linkLast(E e) {		// 将该节点插入到链表尾后，作为新链表尾�
     size++;
     modCount++;
 }
+```
 
+将节点插入到指定结点的前面
+
+```java
 void linkBefore(E e, Node<E> succ) {	// 节点插入到后继succ之前——前提是succ是存在的，而不是null
     // assert succ != null;
     final Node<E> pred = succ.prev;
@@ -458,7 +502,11 @@ void linkBefore(E e, Node<E> succ) {	// 节点插入到后继succ之前——前
     size++;
     modCount++;
 }
+```
 
+删除头结点 or 尾结点 or 指定结点
+
+```java
 // 链表头节点取出操作
 // 将头结点的内容和指向全部赋值为null（方便GC回收），更新first和last（看需要），更新计数和修改数
 private E unlinkFirst(Node<E> f) {		
@@ -519,14 +567,39 @@ E unlink(Node<E> x) {
     modCount++;
     return element;
 }
+```
 
+根据索引查找对应的结点，看index的大小，看是从头开始近还是尾开始近。——最多查找一半O(N/2)
+
+```java
+// 在链表中查找指定索引的元素——返回该节点，注意返回的是节点，而不是节点的值
+Node<E> node(int index) {		
+    // assert isElementIndex(index);
+
+    if (index < (size >> 1)) {		// 如果index未到链表长度的一半，那么从头开始找——找后继
+        Node<E> x = first;
+        for (int i = 0; i < index; i++)
+            x = x.next;
+        return x;
+    } else {				// 如果index>=链表长度的一半，那么从尾巴开始找——找前驱
+        Node<E> x = last;
+        for (int i = size - 1; i > index; i--)
+            x = x.prev;
+        return x;
+    }
+}
+```
+
+边界检查：
+
+```java
 // 边界检查——主要是针对add操作的
 private void checkPositionIndex(int index) {
     if (!isPositionIndex(index))		// 如果不在合适范围内，就抛出越界异常
         throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
 }
 private boolean isPositionIndex(int index) {		// 判断当前索引是否在合适的范围内0~size内
-    return index >= 0 && index <= size;
+    return index >= 0 && index <= size;			// =size,add就是插到链表尾
 }
 
 // 边界检查——主要是针对非add操作，且传参index的，需要对该参数进行判断
@@ -540,9 +613,17 @@ private boolean isElementIndex(int index) {
 }
 ```
 
+抛出的异常内容：
+
+```java
+private String outOfBoundsMsg(int index) {
+    return "Index: "+index+", Size: "+size;
+}
+```
+
 ### （9）toArray
 
-将链表转换成Object[]数组形式（和ArrayList类似）
+将链表转换成Object[]数组形式（和ArrayList类似）——取出每个节点的value，然后组成一个数组
 
 ```java
 public Object[] toArray() {
@@ -648,20 +729,44 @@ ps：本质上还是浅拷贝，虽然有新创建一个链表，但是里面的
 
 ### （12）接口实现ListIterator
 
+#### 使用方法：（和arrayList一样）
+
+```java
+LinkedList<String> linkedlist = new LinkedList<String>();
+// Obtaining Iterator
+Iterator<String> it = linkedlist.iterator();
+while(it.hasNext()){
+    System.out.println(it.next());
+}
 ```
-public ListIterator<E> listIterator(int index) {
+
+由于LinkedList没有实现iterator，所以也没有对应的`iterator()`方法，所以会去默认调用父类的`AbstractList`的方法：
+
+```java
+public ListIterator<E> listIterator() {
+    return listIterator(0);
+}
+
+public Iterator<E> iterator() {
+    return listIterator();
+}
+```
+
+#### 实现原理：
+
+```java
+public ListIterator<E> listIterator(int index) {		// 指定迭代的起始index
     checkPositionIndex(index);
     return new ListItr(index);
 }
-
 ```
 
-和ArrayList类似，但是只实现了一个ListItr，而没有实现普通的迭代器
+和ArrayList类似，但是只实现了一个ListItr，而没有实现普通的迭代器iterator。
 
 ```java
 // 方法内部类
 private class ListItr implements ListIterator<E> {
-    private Node<E> lastReturned;	// 保存上一次返回的值
+    private Node<E> lastReturned;	// 保存本次返回的值（下一次循环就是上一次返回的结点）
     private Node<E> next;		// 指向下一个节点（下次循环就是cur节点）
     private int nextIndex;		// 下一个节点对应的索引值（下次循环就是cur索引）
     private int expectedModCount = modCount;
@@ -677,9 +782,9 @@ private class ListItr implements ListIterator<E> {
         return nextIndex < size;
     }
 
-    public E next() {		// lastreturn=next-1
+    public E next() {		
         checkForComodification();		// 检查并发
-        if (!hasNext())		// 如果已经遍历到链表尾，那么抛出异常
+        if (!hasNext())		// ——根据上面的遍历过程，可以发现一定会先判断hasNext，满足才会进入；所以不满足是index太大了
             throw new NoSuchElementException();
 
         lastReturned = next;	// 更新上一次返回的值，变成当前节点
@@ -698,18 +803,18 @@ private class ListItr implements ListIterator<E> {
             throw new NoSuchElementException();
 		// 更新上一次返回的节点，为当前节点
         lastReturned = next = (next == null) ? last : next.prev;	// 如果cur为null，那么就是链表尾节点的后面一个，那么赋值链表尾节点——因为null是找不到前驱和后继的；非null，就返回前驱节点，这个操作主要针对构造方法里面的初始化设置为null，那么这边也要对应设置
-        nextIndex--;
+        nextIndex--;			
         return lastReturned.item;
     }
 
     public int nextIndex() {
-        return nextIndex;		// 针对next方向，那么next即下一个
+        return nextIndex;		// 向后遍历，那么返回的就是下一个访问的节点的index
     }
 
     public int previousIndex() {
         return nextIndex - 1;	// 针对previous方向，那么需要-1，表示前一个
     }
-
+	
     public void remove() {		// 删除上一个返回的节点——考虑了不同方向的删除方法
         checkForComodification();
         if (lastReturned == null)
@@ -717,17 +822,17 @@ private class ListItr implements ListIterator<E> {
 
         Node<E> lastNext = lastReturned.next;
         unlink(lastReturned);		// 将该节点移除
-        // 保证next和nextIndex指向同一个节点，next()方向进行删除——那么刚刚删除的就是next的前驱节点，那么next = lastreturned.next（next不需变化）,而当前的next节点在链表中中的相对位置发生变化，那么需要将nextIndex--，以统一；previous()方向删除——那么刚刚删除的是next本身，那么需要指向其后一个节点（算是遍历过的节点，逆序遍历的next就是指向当前节点），但是nextIndex不能变化
-        if (next == lastReturned)	
+
+        if (next == lastReturned)// 向前遍历，删除当前节点时，那么next还是要指向上一次遍历的结点，不然下面的遍历无法继续
             next = lastNext;
         else
-            nextIndex--;
+            nextIndex--;	// 向后遍历，由于结点少了一个，所以index也要减少——向后遍历，next未变
         lastReturned = null;// 置为null，标记为此次循环已经修改过，不能再进行操作，包括set、remove，但是可以add
         expectedModCount++;// 为了和modCount统一
     }
 
     public void set(E e) {		// 修改上一次返回的值，可以在调用这个之后再调用add/remove
-        if (lastReturned == null)// 如果已经修改过（add/remove），会抛出异常，一定要在next/previous操作之后才行
+        if (lastReturned == null)// 如果已经修改过（add/remove），会抛出异常，一定要在next/previous操作之后才行；也防止还未开始遍历就设置值
             throw new IllegalStateException();
         checkForComodification();
         lastReturned.item = e;
@@ -761,6 +866,8 @@ private class ListItr implements ListIterator<E> {
     }
 }
 ```
+
+可以发现：add：在一次循环中可以不断进行；但是set、remove只能针对当前结点，且只能删除一次
 
 ps：同样，checkForComodification在任何操作前，都会进行调用，所以在迭代器中需要修改链表数据结构就一定要通过迭代器提供的方法，否则马上就会抛出异常；而且这个也会对并发进行判断，例如两个线程同时通过迭代器进行remove操作等，那么也会抛出异常（但不能发现所有的并发异常，主要是因为性能考虑）
 
@@ -884,8 +991,6 @@ static final class LLSpliterator<E> implements Spliterator<E> {
 }
 ```
 
-## 总结：
+参考：
 
-读过ArrayList再读这个就感觉简单很多，主要是链表的一些操作本身就比较简单直观
-
-ps：LinkedList也是支持元素值为null，会对null进行特殊处理
+1. https://www.jianshu.com/p/3914b61ab71b
