@@ -1,5 +1,7 @@
 # ReentrantLock源码阅读
 
+实现是在JUC：java.util.concurrent并发包里面
+
 ReentrantLock是
 
 - 显式锁
@@ -368,8 +370,39 @@ public final void acquire(int arg) {		// 传递的参数为1
 理解：
 
 1. `tryAcquire(1)`根据多态，实际上会根据锁的类型去调用对应的具体的`tryAcquire(1)`方法，如果获取成功，那么占有了锁，没有下面的麻烦事了
+
 2. 如果`tryAcquire()`返回false，表示获取失败，那么调用`addWaiter(Node.EXCLUSIVE)`**加入到等待队列中**
-3. 加入到等待队列之后，会调用`acquireQueued(node, arg);`
+
+3. 加入到等待队列之后，会调用`acquireQueued(node, arg);`，在队列中尝试获得锁，如果失败多次，就被挂起，最后被唤醒，然后再次尝试获得锁
+
+   最后acquireQueued返回，那肯定是带着锁的，然后返回的是interrupt的状态——true，表示在此期间，该线程是被设置为中断使能的；false就没有，程序结束
+
+4. 进入if，然后执行自我中断——其实还是设置中断标志位，本质上就是前面已经设置过中断标志位了，但是这边是获得锁之后重复设置一次
+
+```java
+static void selfInterrupt() {
+    Thread.currentThread().interrupt();
+}
+
+public void interrupt() {
+    if (this != Thread.currentThread())
+        checkAccess();
+    synchronized (blockerLock) {
+        Interruptible b = blocker;
+        if (b != null) {
+            interrupt0();           // Just to set the interrupt flag
+            b.interrupt(this);
+            return;
+        }
+    }
+    interrupt0();
+}
+```
+
+why在获取锁的情况下还要去执行线程中断？
+
+1. 当中断线程被唤醒时，并不知道被唤醒的原因，可能是当前线程在等待中被中断，也可能是释放了锁以后被唤醒。因此我们通过Thread.interrupted()方法检查中断标记（该方法返回了当前线程的中断状态，并将当前线程的中断标识设置为False），并记录下来，如果发现该线程被中断过，就再中断一次。
+2. 线程在等待资源的过程中被唤醒，唤醒后还是会不断地去尝试获取锁，直到抢到锁为止。也就是说，**在整个流程中，并不响应中断，只是记录中断记录**。最后抢到锁返回了，那么**如果被中断过的话，就需要补充一次中断。**
 
 ##### 第二层：addWaiter：
 
@@ -525,6 +558,30 @@ public static void park(Object blocker) {
 
 ——此时，**线程会进入waiting状态**（不是blocking状态），那么不会得到调度，线程阻塞在当前位置——注意，它还是在CLH队列中的（之前，线程虽然在队列中，但是**它还是running状态**）
 
+当当前节点unlock释放锁，会唤醒队首的存在waiting的节点，而该节点的线程得到cpu后，会回到这边。最后返回当前线程（该节点线程）的状态
+
+配合第二层的acquireQueued看，
+
+```java
+try {
+        boolean interrupted = false;		// 标记是否被中断
+        for (;;) {
+            final Node p = node.predecessor();		
+            if (p == head && tryAcquire(arg)) {		// 表示node是第一个节点，那么尝试去获取锁
+                setHead(node);				// 获取成功了，将node内容清掉，head向后移动，把原来的head节点给清掉
+                p.next = null; // help GC
+                failed = false;				// 标记为成功
+                return interrupted;			// 返回是否中断标记——如果true，表示要进行中断；如果false表示不中断
+            }
+            if (shouldParkAfterFailedAcquire(p, node) &&
+                parkAndCheckInterrupt())		// 从这边返回
+                interrupted = true;			// 因为返回true，需要更新interrupt为true；返回false，那么不更新；都会再次去执行循环
+        }
+    }
+```
+
+
+
 ##### 第三层：cancelAcquire
 
 ——在这边，这个只是用来处理异常的特殊情况（正常情况下并不会被执行）
@@ -583,6 +640,22 @@ private void cancelAcquire(Node node) {
 }
 ```
 
+可以发现，cancelAcquire是对next指针进行操作，但是并没有操作pred指针。why？
+
+在这个之前，当前节点的前继节点有可能已经执行完并移除队列了，此时prev是不确定的，例如把prev指向一个已经移除队列的node。所以修改prev指针不大安全。
+
+而对pred操作在这边的代码：
+
+而在shouldParkAfterFailedAcquire执行，执行到这边，说明已经有其他线程获取锁了，所以状态确定，可以用来更新prev
+
+```java
+do {
+    node.prev = pred = pred.prev;
+} while (pred.waitStatus > 0);
+```
+
+##### 第三层：unparkSuccessor
+
 ```java
 private void unparkSuccessor(Node node) {
     int ws = node.waitStatus;
@@ -600,18 +673,64 @@ private void unparkSuccessor(Node node) {
 }
 ```
 
-可以发现，cancelAcquire是对next指针进行操作，但是并没有操作pred指针。why？
+why需要从后向前找：
 
-在这个之前，当前节点的前继节点有可能已经执行完并移除队列了，此时prev是不确定的，例如把prev指向一个已经移除队列的node。所以修改prev指针不大安全。
+节点入队不是原子性操作，更新tail节点是CAS，但是更新之后就有可能去执行unpark，所以可能存在pred.next还没来得及更新。所以这样不能从前向后找，队列不完整，所以需要从前向后，看pred找。
 
-而对pred操作在这边的代码：
-
-而在shouldParkAfterFailedAcquire执行，执行到这边，说明已经有其他线程获取锁了，所以状态确定，可以用来更新prev
+并且在cancelled都是先断开next，并没有截断pred，所以需要pred才能遍历完所有的节点。
 
 ```java
-do {
-    node.prev = pred = pred.prev;
-} while (pred.waitStatus > 0);
+if (pred != null) {
+    node.prev = pred;
+    if (compareAndSetTail(pred, node)) {
+        pred.next = node;			// 这句执行前被打断了
+        return node;
+    }
+}
+```
+
+## 解锁：存在唤醒
+
+ReentrantLock在解锁的时候，并不区分公平锁和非公平锁。
+
+##### 第一层：unlock/release
+
+```java
+// ReentrantLock.java实现
+public void unlock() {
+    sync.release(1);
+}
+
+// AQS.java实现
+public final boolean release(int arg) {			// 传的参数：1
+    if (tryRelease(arg)) {				// 说明能彻底释放该锁
+        Node h = head;
+        if (h != null && h.waitStatus != 0)	// h!=null，表示有等待的线程；h.waitStatus == 0，那么后继线程还是处于运行中，不需要唤醒；!=0, 那么唤醒第一个等待的线程——head的后继
+            unparkSuccessor(h);
+        return true;
+    }
+    return false;			// 存在重入的情况，还不能彻底释放（当前线程还占有锁）
+}
+```
+
+可以发现：用的是框架，里面会回调子类实现的方法
+
+##### 第二层：tryRelease
+
+```java
+// ReentrantLock里面的sync实现的：对于FairSyn/NonfairSyn都是一样的
+protected final boolean tryRelease(int releases) {			// 默认给的是1
+    int c = getState() - releases;			// 记录更新的state的值（主要存在重入的情况）
+    if (Thread.currentThread() != getExclusiveOwnerThread())			// 当前线程不是持有锁的线程，不存在解锁的情况，抛出异常
+        throw new IllegalMonitorStateException();
+    boolean free = false;			// 标志是否能彻底释放该锁
+    if (c == 0) {			// 说明能彻底释放该锁
+        free = true;
+        setExclusiveOwnerThread(null);		// 清空独占线程
+    }
+    setState(c);
+    return free;
+}
 ```
 
 
@@ -714,6 +833,8 @@ private void setHead(Node node) {			// 设置头结点
     node.prev = null;
 }
 ```
+
+
 
 参考：
 
