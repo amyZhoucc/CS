@@ -487,7 +487,7 @@ private void init(ThreadGroup g, Runnable target, String name,
 
 注意：
 
-1. interrupt方法只是向线程发送中断请求，但是线程何时响应看代码
+1. **interrupt方法只是向线程发送中断请求，但是线程何时响应看代码**
 
 2. 如果线程处于等待状态，然后又对其调用interrupt，会抛出**异常`InterruptedException`**
 
@@ -960,14 +960,16 @@ Lock中提供了synchronized没有的功能：
 
 而ReentrantLock可被中断，即在等待锁过程中也可以被中断，但是必须是通过`ReentrantLock.lockInterruptibly()`来获取的锁（普通的lock是无效的）
 
+`doAcquireInterruptibly`会让在等待队列中的线程不断地去获取锁，直到获取成功 or 被中断，如果尝试获取失败则还在等待队列中。
+
 ```java
 private void doAcquireInterruptibly(int arg)
     throws InterruptedException {
     // 把线程放进等待队列
     final Node node = addWaiter(Node.EXCLUSIVE); 
-    boolean failed = true;
+    boolean failed = true;			// 标记是否成功拿到资源，默认是失败的
     try {
-        // 自旋
+        // 自旋——直到获取锁 or 中断
         for (;;) {
             // 获取前置节点
             final Node p = node.predecessor();

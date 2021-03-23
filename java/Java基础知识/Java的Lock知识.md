@@ -486,3 +486,55 @@ Intel手册对lock前缀的说明如下：
 2. https://juejin.cn/post/6844903558937051144
 3. https://zhuanlan.zhihu.com/p/94762520
 
+## 2. ReentrantLock & synchronized比较
+
+|              | ReentrantLock                                                | synchronized                 |
+| ------------ | ------------------------------------------------------------ | ---------------------------- |
+| 锁的实现机制 | 依赖AQS + CAS                                                | 监视器模式                   |
+| 灵活性       | 支持响应中断、超时、尝试获取锁<br/>（是否在等待中进行响应，需要配置可响应的锁） | 不灵活                       |
+| 释放形式     | **显式调用**unlock()才能释放锁                               | 该部分结束后会自动释放监视器 |
+| 锁类型       | 公平锁 or 非公平锁（可配置）                                 | **非公平锁**                 |
+| 条件队列     | 可关联多个条件队列                                           | 只能关联一个条件队列         |
+| 可重入性     | 可重入                                                       | 可重入                       |
+|              |                                                              |                              |
+
+```java
+// **************************Synchronized的使用方式**************************
+// 1.同步代码块
+synchronized (this) {}			// 锁住的是实例对象，但是粒度较小（同步代码块上下的代码还是能够不获取锁去执行的）
+// 2.用于对象
+synchronized (object) {}		// 锁住的是实例对象
+// 3.同步方法
+public synchronized void test () {}		// 锁住的是实例对象
+// 4.静态方法
+public static synchronized void test(){}		// 锁住的是类对象
+// 4.可重入
+for (int i = 0; i < 100; i++) {
+    synchronized (this) {}
+}
+```
+
+```java
+// **************************ReentrantLock的使用方式**************************
+public void test () throw Exception {
+	// 1.初始化选择公平锁、非公平锁
+	ReentrantLock lock = new ReentrantLock(true);
+	// 2.可用于代码块
+	lock.lock();
+	try {
+		try {
+			// 3.支持多种加锁方式，比较灵活; 具有可重入特性
+			if(lock.tryLock(100, TimeUnit.MILLISECONDS)){ }
+		} finally {
+			// 4.手动释放锁
+			lock.unlock()
+		}
+	} finally {
+		lock.unlock();
+	}
+}
+```
+
+参考：
+
+1. https://tech.meituan.com/2019/12/05/aqs-theory-and-apply.html
