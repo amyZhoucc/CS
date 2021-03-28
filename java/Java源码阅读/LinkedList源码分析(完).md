@@ -994,3 +994,105 @@ static final class LLSpliterator<E> implements Spliterator<E> {
 参考：
 
 1. https://www.jianshu.com/p/3914b61ab71b
+
+
+
+# 线程安全的队列
+
+## ——ConcurrentLinkedQueue
+
+有两种方法实现线程安全的队列：阻塞算法；非阻塞算法
+
+阻塞算法：在队列的添加和删除时都添加一个锁；对队列的添加用一个锁，对队列的删除用一个锁。
+
+非阻塞算法：用CAS实现。
+
+**ConcunrrentLinkedQueue就是用非阻塞算法实现的。**
+
+这边只做一个原理记录，而不进行详细的源代码分析。
+
+ConcurrentLinkedQueue：基本是链表形式的队列，FIFO。
+
+特点：
+
+## 0. 节点数据结构
+
+```java
+private static class Node<E> {
+    volatile E item;				// 节点值——volatile类型
+    volatile Node<E> next;			// 下一个节点——volatile类型
+    Node(E item) {
+        UNSAFE.putObject(this, itemOffset, item);
+    }
+
+    boolean casItem(E cmp, E val) {				// 设置值，cmp是预期的值，val是要设置的值
+        return UNSAFE.compareAndSwapObject(this, itemOffset, cmp, val);
+    }
+
+    void lazySetNext(Node<E> val) {			// 设置next的值，但是并不能保证立即对其他线程可见
+        UNSAFE.putOrderedObject(this, nextOffset, val);
+    }
+
+    boolean casNext(Node<E> cmp, Node<E> val) {			// 设置next
+        return UNSAFE.compareAndSwapObject(this, nextOffset, cmp, val);
+    }
+    private static final sun.misc.Unsafe UNSAFE;
+    private static final long itemOffset;	// 存储item、next的位移，因为CAS调用的是c++的底层，所以直接用内存中的位置
+    private static final long nextOffset;
+
+    static {
+        try {
+            UNSAFE = sun.misc.Unsafe.getUnsafe();
+            Class<?> k = Node.class;
+            itemOffset = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("item"));
+            nextOffset = UNSAFE.objectFieldOffset
+                (k.getDeclaredField("next"));
+        } catch (Exception e) {
+            throw new Error(e);
+        }
+    }
+}
+```
+
+理解：注意：item、next都是volatile修饰的，能够保证多线程的读、单线程的写，且写后读能够读到最新值
+
+## 1. 节点入队
+
+写出这个代码的人真的太🐂🍺了，我连看都看不懂。
+
+```java
+public boolean offer(E e) {
+    checkNotNull(e);		// 判断节点值是否是null，为null就抛出异常
+    final Node<E> newNode = new Node<E>(e);
+
+    for (Node<E> t = tail, p = t;;) {			// 死循环
+        Node<E> q = p.next;		// p=t=tail,p.next就是指向尾节点的next
+        if (q == null) {		// 尾节点的next为null，说明tail就是最后一个节点，那么cas，设置tail的next为e
+            if (p.casNext(null, newNode)) {		// 此时，tail.next=newNode
+                if (p != t) // 
+                    casTail(t, newNode);  // Failure is OK.
+                return true;
+            }
+            // Lost CAS race to another thread; re-read next
+        }
+        else if (p == q)	// 如果tail节点不是最后一个节点
+            // We have fallen off list.  If tail is unchanged, it
+            // will also be off-list, in which case we need to
+            // jump to head, from which all live nodes are always
+            // reachable.  Else the new tail is a better bet.
+            p = (t != (t = tail)) ? t : head;
+        else
+            // Check for tail updates after two hops.
+            p = (p != t && t != (t = tail)) ? t : q;
+    }
+}
+
+private boolean casTail(Node<E> cmp, Node<E> val) {
+    return UNSAFE.compareAndSwapObject(this, tailOffset, cmp, val);
+}
+```
+
+——反正就是实现了并发的操作。
+
+.....

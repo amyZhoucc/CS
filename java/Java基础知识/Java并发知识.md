@@ -64,9 +64,9 @@ eg：volatile的使用技巧：
 JDK7中：LinkedTransferQueue，在使用volatile变量时，用一种追加字节的方式来优化队列出队和入队的性能
 
 ```java
-/＊＊ 队列中的头部节点 ＊/
+/** 队列中的头部节点 **/
 private transient final PaddedAtomicReference<QNode> head;
-/＊＊ 队列中的尾部节点 ＊/
+/** 队列中的尾部节点 **/
 private transient final PaddedAtomicReference<QNode> tail;
 static final class PaddedAtomicReference <T> extends AtomicReference <T> {
   //使用很多4个字节的引用追加到64个字节
@@ -89,6 +89,22 @@ public class AtomicReference <V> implements java.io.Serializable {
 
 - 缓存行非64字节宽的处理器，某些是32位宽的等
 - 共享变量不会被频繁地写，锁的几率也非常小，就没必要通过追加字节的方式来避免相互锁定。
+
+### volatile实现的进程间通信：
+
+**volatile可以通过写-读操作，实现进程间通信**。
+
+写：就是线程A对线程B（要读该共享变量的线程）发出了消息，消息就是提醒共享变量值已经修改
+
+读：线程B就是接收了线程A发出的消息。
+
+从上层看，就是A对B发送了消息。从底层实现是A先将值写回主内存，然后将所有的该变量的缓存置为无效，然后B从内存中读取
+
+<img src="../pic/image-20210327104509249.png" alt="image-20210327104509249" style="zoom: 33%;" />
+
+
+
+
 
 ## 1.2 synchronized的实现原理与应用
 
@@ -184,7 +200,7 @@ synchronized是悲观锁，在操作同步资源之前需要给同步资源先�
 
 触发条件：偏向锁只有遇到其他线程**尝试竞争偏向锁**（即上面的2.1状态）时，持有偏向锁的线程才会释放锁，**线程不会主动释放偏向锁**（一旦持有，只有出现竞争才释放）
 
-操作前提：需要等待全局安全点（在这个时间点上没有正在执行的字节码）
+操作前提：需要等待**全局安全点**（在这个时间点上没有正在执行的字节码）
 
 具体操作：
 
@@ -277,11 +293,260 @@ synchronized是悲观锁，在操作同步资源之前需要给同步资源先�
 
   缓存一致性机制，某个CPU将缓存行写回后，会通知其他CPU对该内存地址的缓存无效，需要重新读取。
 
-# 2. Java并发编程的基础
+# 2. Java内存模型
 
-## 2.1 线程
+内存模型相关的基本概念；同步原语，主要介绍3个同步原语（synchronized、volatile和final）的内存语义及重排序规则在处理器中的实现。
 
-### 2.1.1 线程概念 & Java中的线程
+重点：：重排序、顺序一致性的内存模型；同步原语
+
+## 2.1基础知识
+
+并发编程需要处理的 ：**线程同步 和 线程间通信**
+
+- 线程的通信机制：共享内存、消息传递
+
+  - 共享内存：共享程序的公共状态，通过读写内存中的公共状态进行隐式通信
+
+  - 消息传递：线程之间发送信息，显式通信。
+
+- 线程之间的同步：共享内存、消息传递
+
+  - 共享内存：是显式进行同步的，需要指定某个方法or代码段需要在线程中互斥执行
+
+  - 消息传递：由于只有消息产生了才能进行传递，才能接收。那么是隐式的同步
+
+### 2.1.1 Java的内存抽象模型
+
+**java的并发采用：共享内存模型**（显式的线程同步、隐式的进程间通信）
+
+而根据Java中内存的布局：实例对象、静态变量、数组等都在堆内存中，堆内存是可以进行共享的。——那么会存在内存可见性的问题
+
+而局部变量是存储在栈中的，是线程私有的，不能进行共享。——不存在内存可见性的问题
+
+**java线程之间的通信由java内存模型控制，JMM决定一个线程对共享变量的写入何时对另一个线程可见。**
+
+抽象看：线程之间的共享变量存储在主内存中；而每个线程都有一个私有的本地内存，是存储了这些共享变量的副本（而本地内存，实际上不存在，只是一个抽象概念，它包括：缓存、写缓冲区、寄存器和其他编译器的优化）
+
+所以，线程的通信需要一个线程将数据写入到主内存，而另外一个线程在写入之后去主内存中读取。
+
+如下图是Java的内存模型的抽象形式：
+
+<img src="..\pic\image-20210327205709092.png" alt="image-20210327205709092" style="zoom: 67%;" />
+
+所以，进程间通信：实际上就就是将写的内容写回主内存，另外一个线程从主内存中读取。
+
+### 2.1.2 重排序
+
+主要是为了提高性能，所以编译器和处理器常对指令进行重排序。
+
+1. **编译器优化的重排序**：在不改变**单线程的程序语义**的情况下，可以重排语句（注意，这边强调单线程，但不能保证不改变多线程的语义）——编译器重排序
+2. **指令级并行的重排序**：流水线操作，只要指令之间不存在数据依赖，处理器可以改变指令的执行顺序——处理器重排序
+3. **内存系统的重排序**：针对内存的读、写缓冲区，使得加载和存储操作看起来是乱序的，即有些数据不会立即写回，而是待一个合适的时机写回。所以这过程的执行看起来像是乱序——处理器重排序
+
+<img src="../pic/image-20210327211029109.png" alt="image-20210327211029109"  />
+
+对于1、2的重排序，如果两个指令存在数据依赖，那么不会进行重排序的
+
+存在的问题：在多线程情况下**出现内存可见性问题**。
+
+对于编译器重排序，可以禁止特定类型的重排序；对于处理器重排序，JMM会要求Java编译在生成指令时在**特定位置加入内存屏障**，从而禁止特定类型的处理器重排序（无法直接控制处理器重排，那么告诉处理器哪些地方不能重排即可）
+
+针对内存系统的重排序——缓冲区：                                                                                                                                                                                                                                                                                                       
+
+- 缓存区的作用：能够保证指令流水线的进行，可以避免由于需要向内存写入数据而产生的等待延迟——**暂时不写入**。并且按照批处理的形式刷新写缓冲区，可以合并同一内存地址的写操作——减少对内存总线的占用。
+- 存在的问题：缓冲区是仅对处理器可见的，所以**存在可见性的问题**。即可能读的数据是未修改之前的数据，而由于写缓存其他线程并没有及时更新。
+- 解决方法：为了保证内存可见性，java编译器会在合适的时候插入内存屏障
+
+| 指令                            | 说明                                                         |
+| ------------------------------- | ------------------------------------------------------------ |
+| Load1; **LoadLoad**; Load2      | 读1一定发生在读2及其他读操作之前                             |
+| Store1; **StroreStore**; Store2 | 写1一定刷新到主内存中，从而对写2及之后的操作可见             |
+| Load1; **LoadStore**; Store2    | 读1一定在写2及其写操作之前                                   |
+| Store1; **StoreLoad**; Load2    | 写1一定在读2及其他读操作前——**能够保证屏障之前的所有读、写操作完成后，才执行屏障后面的操作**<br />即，将屏障前的操作全部刷新到内存 |
+
+- **全能屏障：store1; storeLoad; load2** ，即保证store1的数据对其他数据均可见。sotre1写入先于load2读取，storeload会保证在该屏障前的所有写入和读取指令均完成了，才开始屏障后的内存访问指令——现代处理器大部分均支持该内存屏障，但是其开销较大。
+
+### 2.1.3 as-if-serial语义
+
+含义：重排序的前提是——**单线程的执行结果不能改变**，所以对数据之间没有依赖的指令可能会进行重排序，但是对于有依赖的必须顺序执行。
+
+所以，从上层来看，单线程中的代码就是按照编写的顺序**顺序执行的。**
+
+——但是，重排序会对多线程造成影响。
+
+### 2.1.4 重排序对多线程的影响
+
+```java
+class ReorderExample {
+    int a = 0;
+    boolean flag = false;
+    public void writer() {				// 线程A调用
+        a = 1; 					// 1
+        flag = true; 			// 2
+    }
+    Public void reader() {				// 线程B调用
+        if (flag) { 			// 3
+            int i = a * a; 		// 4
+            ……
+        }
+    }
+}
+```
+
+理解：
+
+1. 如果线程A中对1、2的执行顺序进行替换，由于1、2并没有存在依赖，所以满足as-if-serial语义，所以符合要求
+
+   但是，如果在2、1执行中间，线程B调用，那么4的结果就是`i = 0`
+
+   这个结果不符合我们的预期。——由于重排序引起的
+
+2. 如果线程B中对3、4的执行顺序进行替换，它们存在**控制依赖**，存在控制依赖会影响指令的并行执行程度，所以处理器会进行**猜测**——我先预测其能进入，先执行了再说；计算结果临时保存到一个名为**重排序缓冲**的硬件缓冲中，如果为真就可以写入了。
+
+   所以，在4、3之间插入了1、2执行，那么最后的结果`i = 0`，不符合预期
+
+   （在单线程中，猜测是不会影响执行结果的，满足as-if-serial语义）
+
+   <img src="../pic/image-20210327214343433.png" alt="image-20210327214343433" style="zoom:67%;" />
+
+## 2.2 顺序一致性
+
+顺序一致性内存模型是一种参考模型
+
+JMM能够保证：如果程序之前正确同步了，那么程序执行满足顺序一致性，即程序的执行结果和在内存一致性模型中的执行结果相同。
+
+顺序一致性要求：
+
+1. 一个线程中的操作是按照代码顺序进行的
+2. 不管是否进行了同步，多个线程能够看到相同的唯一的执行顺序，所以需要保证每个操作都是原子性和可见性，那么它们看到的都一样
+
+JMM和顺序一致性模型的差异：
+
+1. 单线程内的指令可能会进行重排序，即使已经进行加锁，锁内还是进行重排序
+
+2. 如果未进行同步，那么执行顺序是无序的，且大家**看到的执行顺序是不一样的**——因为不满足内存可见性
+
+3. JMM不能保证64位的读写操作是原子性（顺序一致性能够保证所有读写操作是原子性的）
+
+   原因：对于32位处理器，一次只能处理32位的数据，对于64位需要分为两个指令完成，那么就不能保证原子性
+
+## 2.3 volatile的内存语义的实现
+
+volatile的内存语义：
+
+- 当写一个volatile变量时，**JMM会将该值写入主内存**（普通变量是写缓存中）
+- 当读一个volatile变量时，JMM会将线程的本地缓存置为无效，而**直接从主内存中读取**
+
+volatile的内存语义的实现：——**添加内存屏障**
+
+编译器在生成字节码的时候，会**插入内存屏障来禁止volatile相关的重排序**
+
+- **volatile的写操作：写操作前的指令不能重排在写之后**
+- **volatile的读操作：读操作后的指令不能重排在读之前**
+- **如果第一个操作是volatile写，第二个操作时读，那么一定是先写后读**
+
+volatile的写之前插入StoreStore屏障——避免普通的写和volatile写互换
+
+volatile的写之后插入StoreLoad屏障——避免后面的volatile读/写和volatile写互换
+
+volatile的读操作之后插入LoadLoad屏障——避免后面普通的读和volatile读互换
+
+volatile的读操作之后插入LoadStore屏障——避免后面的普通的写和volatile读互换
+
+——但是，编译器会根据实际情况进行优化，去除不必要的屏障，只需要满足上面的原则。
+
+该屏障是对于所有平台来说，但是针对不同的底层处理器，还有不同的松紧度，X86只会在最后插入一个StoreLoad屏障，其他屏障均被忽略
+
+## 2.4 锁的内存语义的实现
+
+锁的内存语义和volatile一致：
+
+- 释放锁时，**JMM会将对应的共享变量的值写入主内存**
+- 获取锁时，**JMM会将对应的缓存置为无效，从而需要直接从主内存中去读取锁**
+
+可以通过源码发现，锁的底层是由AQS实现的。而AQS的核心就是`volatile int state;`，并且在并发场景下，是用CAS对值进行修改的。
+
+volatile有3个内存语义；
+
+CAS有2个内存语义：
+
+- CAS含义：如果当前值等于预期值，那么就将值修改为给定值。
+- 内存语义：CAS前面和后面的任意内存均不能交换位置——兼具volatile的读语义和写语义
+
+CAS的底层实现：添加Lock（如果是单处理器，不需要）
+
+而Lock能够：
+
+1. 锁定总线 / 锁定内存
+2. 禁止指令重排
+3. 将写缓冲区的所有数据写回主内存
+
+所以，**锁的底层就是兼具了volatile的特性和CAS的特性。**
+
+## 2.5 final域的内存语义的实现
+
+final修饰变量，就是表示该变量能且只能被初始化一次——**需要被初始化，且只能初始化一次。**
+
+重排序的规则：
+
+1. 在构造方法中，对final域的写入，和之后把该对象赋值给一个引用变量，它们之间不能重排序
+
+   需要，先写final域，然后才能将初始化完成的对象赋值给引用变量
+
+2. 第一次读一个有final域的对象引用，和第一次读这个final域，它们之间不能重排序
+
+   即一定是先读对象引用，才能读final域
+
+3. 如果final域是引用对象，需要增加，在构造方法中对final对象的成员域的写入，和该包含有该final对象的对象赋值给引用变量，它们之间不能重排序
+
+   即，final域的成员变量赋值也需要在构造方法中完成
+
+针对规则1：**JMM会禁止将final域的写重排序到构造方法之外**
+
+实现：在final域写之后，在return之前，加入StoreStore内存屏障。
+
+<img src="..\pic\image-20210328095714526.png" alt="image-20210328095714526" style="zoom:40%;" />
+
+这样就能保证正确的读到final域的值；
+
+针对规则2：实际上读对象和读对象的final存在关联，所以一般的处理器不会重排序，但是还是有处理器会重排序，那么在这两者之间插入LoadLoad屏障。
+
+<img src="..\pic\image-20210328095714526.png" alt="image-20210328095714526" style="zoom:50%;" />
+
+### 对象引用的逸出
+
+对于上面的final规则1、3，就是在构造方法返回需要完成final域的初始化。其实还隐藏了：**在构造方法内部，不能让被构造对象的引用对其他线程可见**——即，在构造方法中不要存在对该对象的引用赋值。
+
+```java
+public class FinalReferenceEscapeExample {
+    final int i;
+    static FinalReferenceEscapeExample obj;
+    public FinalReferenceEscapeExample () {
+        i = 1; 					// 1 写final域
+        obj = this; 			// 2 对象引用溢出（1、2可能存在重排序）
+    }
+    public static void writer() {
+        new FinalReferenceEscapeExample ();
+    }
+    public static void reader() {
+        if (obj != null) { 			// 3
+            int temp = obj.i; 		// 4
+        }
+    }
+}
+```
+
+理解：
+
+1. 如果1、2进行重排序，在并发过程中，线程A去执行writer，线程B执行reader，如果在2、1执行中间，线程B去执行，那么`obj!=null`满足，但是此时final还未进行初始化
+
+在X86中，不会对两个写进行重排序，所以没有StoreStore屏障；而对存在间接依赖的操作也不会进行重排序，那么没有LoadLoad屏障。所以，对于X86来说，final没有任何屏障。
+
+# 3. Java并发编程的基础
+
+## 3.1 线程
+
+### 3.1.1 线程概念 & Java中的线程
 
 现代操作系统在运行一个程序时，会为其创建一个进程。例如启动一个Java进程，就会为其创建一个进程。
 
@@ -309,7 +574,7 @@ Java程序天生就是多线程程序，执行main()方法的是一个名称为m
 
 （`VM Thread`：**线程母体,最原始的线程**，单例，里面有个队列，存放各种的操作，它负责loop处理队列中的操作.（包括对其他线程的创建，分配和对象的清理，cms-mark等工作））
 
-### 2.1.2 why引入多线程
+### 3.1.2 why引入多线程
 
 1. **多核处理器——并行方面**
 
@@ -325,7 +590,7 @@ Java程序天生就是多线程程序，执行main()方法的是一个名称为m
 
    Java提供了一系列的模型，而程序员只需要关注如何解决问题，而不用考虑其他的问题。
 
-### 2.1.3 线程优先级
+### 3.1.3 线程优先级
 
 Java线程中，通过一个整型成员变量priority来控制优先级，优先级的范围从1~10，默认是5，可以通过setPriority(int)方法来修改优先级。
 
@@ -338,7 +603,7 @@ Java线程中，通过一个整型成员变量priority来控制优先级，优�
 
 线程优先级不能作为程序正确性的依赖，因为**操作系统可以完全不用理会Java线程对于优先级的设定**。
 
-### 2.1.4 线程状态
+### 3.1.4 线程状态
 
 归总是5个状态
 
@@ -358,7 +623,7 @@ Java线程中，通过一个整型成员变量priority来控制优先级，优�
 
 ps：阻塞在java.concurrent包中Lock接口的线程状态却是等待状态，因为java.concurrent包中Lock接口对于阻塞的实现均使用了LockSupport类中的相关方法。
 
-### 2.1.5 Daemon线程——特殊线程
+### 3.1.5 Daemon线程——特殊线程
 
 Daemon线程是一种支持性线程，它主要被用作**程序中后台调度以及支持性工作**。当一个Java虚拟机中**不存在非Daemon线程的时候，Java虚拟机将会退出**。
 
@@ -384,7 +649,7 @@ public static void main(String[] args) {
 
 但是需要注意：守护线程**不能持有任何需要关闭的资源**，例如打开文件等，因为虚拟机退出时，守护线程没有任何机会来关闭文件，这会导致数据丢失。
 
-### 2.1.6 线程的创建
+### 3.1.6 线程的创建
 
 如何构造一个线程：
 
@@ -473,11 +738,11 @@ private void init(ThreadGroup g, Runnable target, String name,
 
 ——初始化线程完毕，在**堆内存**中等待着运行。
 
-### 2.1.7 启动线程
+### 3.1.7 启动线程
 
 当前线程（即parent线程）**同步告知Java虚拟机**，只要线程规划器空闲，应立即启动调用start()方法的线程。
 
-### 2.1.8 中断（和OS不一样）
+### 3.1.8 中断（和OS不一样）
 
 该中断和OS不一样，eg：场景：例如下载一个软件，期间不想下载了，选择取消，这个取消就是中断，那么该线程就需要终止。
 
@@ -509,7 +774,7 @@ private void init(ThreadGroup g, Runnable target, String name,
 
   ——但是抛出该异常，说明有线程期待该线程被中断
 
-### 2.1.9 挂起、恢复、停止
+### 3.1.9 挂起、恢复、停止
 
 分别为suspend、resume、stop方法，非常“人性化”。但是这些API是过期的，不建议使用。
 
@@ -520,15 +785,15 @@ private void init(ThreadGroup g, Runnable target, String name,
 
 ——存在副作用，所以不建议使用，可以用wait/notify进行替换。
 
-### 2.1.10 安全终止线程
+### 3.1.10 安全终止线程
 
 即能够让程序正常走到最后，然后终止；也可以用中断安全终止。反正不能用stop终止。
 
-## 2.2 线程间通信
+## 3.2 线程间通信
 
 多个线程能够相互配合完成工作，才能发挥最大的功能。
 
-### 2.2.1 volatile 和 synchronized 关键字
+### 3.2.1 volatile 和 synchronized 关键字
 
 **volatile能保证变量的可见性。**
 
@@ -548,7 +813,7 @@ synchronized的基本原理：**使用了monitorenter和monitorexit指令**。�
 
 <img src="../pic/monitor.jpg" style="zoom: 67%;" >
 
-### 2.2.2 wait/notify机制
+### 3.2.2 wait/notify机制
 
 synchronzied解决了多线程的竞争问题，但是无法解决多线程的协调问题，配合工作。
 
@@ -663,7 +928,7 @@ synchronized(对象){
 }
 ```
 
-### 2.2.3 管道输入和输出
+### 3.2.3 管道输入和输出
 
 管道输入/输出流，主要用于**线程之间的数据传输**，而传输的媒介为**内存**。
 
@@ -709,7 +974,7 @@ public class Piped {
 
 ——在使用前必须先绑定`out.connect(in);`
 
-### 2.2.4 thread.join()：默认带锁
+### 3.2.4 thread.join()：默认带锁
 
 线程A执行了`threadB.join()`语句，其含义是：当前线程A等待**threadB线程终止之后**才从threadB.join()返回
 
@@ -747,7 +1012,7 @@ public final synchronized void join(long millis) throws InterruptedException {	/
 2. 这边的wait方法，本质上就是**`this.wait()`**，对象就是线程对象，而join方法本身就是synchronized的，所以能在里面执行，它必定已经获取到了`this`锁，所以wait之后，会释放this锁
 3. join本质上，还是wait/notify实现的，当线程终止时，会调用线程自身的notifyAll()方法，会通知所有等待在该线程对象上的线程
 
-### 2.2.5 ThreadLocal
+### 3.2.5 ThreadLocal
 
 #### 原理：
 
@@ -872,7 +1137,7 @@ public class RequestContext {
 }
 ```
 
-## 2.3 线程池技术
+## 3.3 线程池技术
 
 why需要线程池：如果采用一个任务一个线程的方式，将会创建数以万记的线程，会使操作系统频繁的进行线程上下文切换、而线程创建和销毁都是需要资源的。
 
@@ -886,7 +1151,9 @@ why需要线程池：如果采用一个任务一个线程的方式，将会创�
 
 常用的Java Web服务器，如Tomcat、Jetty，在其处理请求的过程中都使用到了线程池技术。
 
-# 3. 锁
+
+
+# 4. 锁
 
 绍Java并发包中与锁相关的API和组件
 
@@ -932,9 +1199,395 @@ Lock中提供了synchronized没有的功能：
 | 被中断地获取锁     | 获取到锁的线程能够响应中断，会抛出中断异常同时会释放锁     |
 | 超时获取锁         | 在指定的截止时间获取锁，获取不到就直接返回了               |
 
-## 3.2 
+## 3.2 AQS
 
+这个之后的知识见《并发AQS理解》，《ReentrantLock源码阅读》
 
+# 4. Java中的线程池
+
+这个不算是Java的数据结构，而是算是一个**并发框架**。线程池是应用场景最多的并发框架。
+
+合理使用线程池有如下3个好处：
+
+1. **降低资源消耗**
+
+   能够复用线程，减少线程新建、销毁的操作开销
+
+   线程太多会造成过分调度的情况。
+
+2. **提高响应速度**
+
+   有任务时，可以直接使用线程池中的线程，而不需要新建线程，等待线程初始化才能执行
+
+3. **提高线程的可管理性**
+
+   可以用线程池合理分配调度线程资源
+
+4. 提供更多强大的功能
+
+   线程池可进行拓展，开发人员可以在线程池的基础上增加功能，例如延时定时线程池，ScheduledThreadPoolExecutor，任务能够延期 or 定期执行
+
+同样，在JUC中提供了一个API：**ThreadPoolExecutor**类。
+
+## 4.1 线程池的概念
+
+基于**池化思想**管理线程的工具。经常出现在多线程服务器中，如MySQL。
+
+池化思想：将资源统一在一起管理，最大化收益最小化风险。
+
+利用池化思想进行管理的，除了线程池，还有：
+
+1. 内存池：实现申请内存块，到需要的时候直接给即可。能够减少碎片，加快申请速度
+2. 连接池：预先申请数据库连接，到用到的时候直接进行即可。提高连接速度
+3. 实例池：循环使用对象，减少线程初始化、回收时的消耗
+
+## 4.2 ThreadPoolExecutor关系
+
+下面是ThreadPoolExecutor的继承关系：
+
+<img src="../pic/threadPool_uml.png">
+
+顶层接口Executor提供了一种思想：将**任务提交和任务执行进行解耦**。即用户只需要提供任务的具体执行方法，只需提供Runnable对象，具体给哪个线程执行、如何调度等不用关注。
+
+ExecutorService接口增加了一些能力：（1）扩充执行任务的能力，补充可以为一个或一批异步任务生成Future的方法；（2）提供了管控线程池的方法，比如停止线程池的运行。
+
+AbstractExecutorService则是上层的抽象类，将执行任务的流程串联了起来。
+
+ThreadPoolExecutor：主要是要维护自身的生命周期，还要管理线程和任务，即如何将任务分发给线程，当任务多时如何处理线程的使用等。
+
+下图是线程池的执行过程：
+
+<img src="../pic/threadPool_cfg.png" style="zoom:67%;" >
+
+根本是**消费者 -- 生产者模式**
+
+线程池的任务分为两部分：**线程管理 + 任务管理**
+
+- 任务管理：生产者。
+
+  任务提交之后，即产生了新的任务，那么线程池会选择：直接申请线程并执行任务；加入到队列中，等待分配线程执行；拒绝该任务
+
+- 线程管理：消费者。当任务来了之后，线程就要处理任务。线程池会统一分配线程，线程执行完成后会继续分配任务执行。而线程没有任务时，就会被回收
+
+1. 线程池如何维护自身状态。
+2. 线程池如何管理任务。
+3. 线程池如何管理线程。
+
+## 4.3 线程池的生命周期管理
+
+线程池运行的状态，不受用户控制，而是内部自行维护。
+
+**线程池内部会维护两个值，而这两个值用一个变量维护**。
+
+- 运行状态：runState
+- 线程数量：workerCount
+
+用一个原子类变量来维护：高3位为运行状态；低29位为线程数量。
+
+```java
+private final AtomicInteger ctl = new AtomicInteger(ctlOf(RUNNING, 0));
+
+private static int ctlOf(int rs, int wc) { return rs | wc; }
+```
+
+优势：用一个变量去存储两个值，可避免在做相关决策时，出现不一致的情况，不必为了维护两者的一致，而占用锁资源。
+
+因为在ThreadPoolExecutor中，常常需要同时判断两个状态
+
+```java
+private static final int CAPACITY   = (1 << COUNT_BITS) - 1;		// 低29位全为1
+private static int runStateOf(int c)     { return c & ~CAPACITY; }		// 取最高3位——获得线程池运行状态
+private static int workerCountOf(int c)  { return c & CAPACITY; }		// 取低29位——获得线程数量
+```
+
+运行状态有5种：运行态（默认）、关闭、停止中、空闲中、terminated
+
+```java
+private static final int COUNT_BITS = Integer.SIZE - 3;		// 29，要移动到最高位进行赋值
+private static final int RUNNING    = -1 << COUNT_BITS;		// 运行态，能够接收新任务，也能处理阻塞的任务
+private static final int SHUTDOWN   =  0 << COUNT_BITS;		// 关闭态，不能接收新任务，但是能处理已保存的阻塞任务
+private static final int STOP       =  1 << COUNT_BITS;		// 不干活，停滞中
+private static final int TIDYING    =  2 << COUNT_BITS;		// 所有任务完成，有效线程数（workCount=0）
+private static final int TERMINATED =  3 << COUNT_BITS;		// 执行完terminated方法后进入
+```
+
+<img src="../pic/threadPool_lifeCycle.png"  >
+
+### 线程池中的核心参数
+
+除了上面的两个与
+
+## 4.4 任务管理⭐
+
+### 4.4.1 任务调度
+
+也就是ThreadPoolExecutor的整个的执行过程
+
+所有任务的调度都是由execute方法完成的，主要是：检查现在线程池的运行状态、运行线程数、运行策略，从而决定接下来的流程，是创建新的线程去执行任务 or 放到缓冲队列中等待执行 or 直接拒绝
+
+流程图如下：
+
+<img src="../pic/threadPool_executeFlow.png">
+
+执行过程如下：
+
+1. 首先，判断线程池的状态，如果是Running状态才继续执行；如果是其他状态，直接拒绝
+2. 判断当前线程数 < 核心线程数，即`workCount < corePoolSize`，那么可以创建一个新的线程直接执行该任务（需要获得全局锁，去创建新的线程）
+3. 如果`workCount >= corePoolSize` && 阻塞队列未满，那么需要将任务放入阻塞队列，然后等待线程依次去执行
+4. 如果`workCount >= corePoolSize` && 阻塞队列满了 && `workCount < maximumPoolSize`，那么可以再次创建新的线程去执行任务（需要获得全局锁，去创建新线程）
+5. 如果`workCount >= maximumPoolSize` && 阻塞队列满了，只能拒绝该任务，会调用`RejectedExecutionHandler.rejectedExecution()`默认的处理方式是直接抛异常。
+
+这样能够避免获得全局锁，当完成预热后，大部分execute的方法都是去执行步骤3（因为池中创建了足够多的线程可以来执行任务）
+
+```java
+public void execute(Runnable command) {
+    if (command == null)
+        throw new NullPointerException();
+    int c = ctl.get();
+    if (workerCountOf(c) < corePoolSize) {
+        if (addWorker(command, true))		// 添加工作线程，直接执行任务
+            return;
+        c = ctl.get();
+    }
+    if (isRunning(c) && workQueue.offer(command)) {		// 尝试插入阻塞队列
+        int recheck = ctl.get();
+        if (! isRunning(recheck) && remove(command))	// 双重检查：可能线程池关了 or 线程死了，那么移除任务，并拒绝
+            reject(command);
+        else if (workerCountOf(recheck) == 0)		// 仍存活，但是如果此时线程全死了，那么创建一个线程
+            addWorker(null, false);
+    }
+    else if (!addWorker(command, false))	// 队列满了，尝试创建新的线程，如果失败了，拒绝；如果成功了，那么直接使用
+        reject(command);
+}
+}
+```
+
+### 4.4.2 任务缓冲
+
+通过一个阻塞队列，实现线程管理和任务管理。
+
+如果队列为空，那么线程会阻塞，等待阻塞队列非空再开始执行——实现线程管理
+
+如果队列未满，且线程数不小于核心线程数，那么进行任务放入阻塞队列——实现任务管理
+
+而且两者从两边开始执行，不直接关联，通过阻塞队列进行相连
+
+不同队列可以实现不同的效果：
+
+| 队列                | 描述                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| LinkedBlockingQueue | 链表形式，FIFO，默认长度为Integer.MAX_VALUE                  |
+| ArrayBlockingQueue  | 数组形式，FIFO，支持公平和非公平锁入队                       |
+| SynchronousQueue    | 不存储元素的阻塞队列，每个put必须等待take操作，即任务来了，要等待一个线程来取<br />支持公平锁和非公平锁 |
+
+在程序中，用`workQueue`表示阻塞队列
+
+```java
+private final BlockingQueue<Runnable> workQueue;
+```
+
+在调用ThreadPoolExecutor的时候，调用构造方法时需要传递阻塞队列对象
+
+### 4.4.3 线程获取任务
+
+主要是针对线程管理的
+
+<img src="../pic/threadPool_threadControl.png" style="zoom: 50%;" >
+
+整个是一个自旋操作：
+
+1. 获取线程池的运行状态，如果运行状态是关闭状态且没有任务要执行 或者 中断、空闲、terminate，那么将线程删除，返回null
+
+2. 获得线程池的线程个数，是否允许线程超时等待，如果是线程个数太多，那么将线程删除，返回null
+
+3. 如果线程允许超时等待，那么限定时间内取获得任务；如果不允许，就阻塞等待获取任务
+
+   获取任务成功，就返回对应的任务
+
+```java
+private Runnable getTask() {
+    boolean timedOut = false; // Did the last poll() time out?
+
+    for (;;) {
+        int c = ctl.get();
+        int rs = runStateOf(c);
+
+        // Check if queue empty only if necessary.
+        if (rs >= SHUTDOWN && (rs >= STOP || workQueue.isEmpty())) {
+            decrementWorkerCount();
+            return null;
+        }
+
+        int wc = workerCountOf(c);
+
+        // Are workers subject to culling?
+        boolean timed = allowCoreThreadTimeOut || wc > corePoolSize;
+
+        if ((wc > maximumPoolSize || (timed && timedOut))
+            && (wc > 1 || workQueue.isEmpty())) {
+            if (compareAndDecrementWorkerCount(c))
+                return null;
+            continue;
+        }
+
+        try {
+            Runnable r = timed ?
+                workQueue.poll(keepAliveTime, TimeUnit.NANOSECONDS) :
+            workQueue.take();
+            if (r != null)
+                return r;
+            timedOut = true;
+        } catch (InterruptedException retry) {
+            timedOut = false;
+        }
+    }
+}
+```
+
+### 4.4.4 任务拒绝
+
+这是一个线程池保护机制，当线程数量足够多时，且线程阻塞队列满时，就不再接收任务
+
+```java
+public interface RejectedExecutionHandler {
+    void rejectedExecution(Runnable r, ThreadPoolExecutor executor);
+}
+```
+
+——用户可以继承之后，自定义处理方案。
+
+JDK提供了4种可选方案：
+
+<img src="../pic/threadPool_reject.png" style="zoom:80%;" >
+
+## 4.5 线程管理
+
+线程池中的线程被称为Worker——工作线程
+
+### 4.5.1 线程生命周期
+
+Worker是ThreadPoolExecutor中实现的内部类
+
+```java
+private final class Worker extends AbstractQueuedSynchronizer implements Runnable{
+    final Thread thread;		// 实例变量，就是实际的线程对象
+    Runnable firstTask;		// 初始化的任务，默认为null
+}
+```
+
+创建一个新的工作线程：
+
+```java
+Worker(Runnable firstTask) {
+    setState(-1); // 禁止中断，是AQS中的state，将其设置为-1，表示没有获取锁
+    this.firstTask = firstTask;
+    this.thread = getThreadFactory().newThread(this);		// 创建新的线程
+}
+```
+
+理解：firstTask可以为null，就需要创建一个线程去执行任务列表中的任务，也就是非核心线程的创建
+
+不为null，线程就会在启动初期立即执行这个任务，也就对应核心线程创建时的情况。
+
+<img src="../pic/threadPool_worker.png" style="zoom: 67%;" >
+
+### 4.5. 线程执行任务
+
+```java
+final void runWorker(Worker w) {
+    Thread wt = Thread.currentThread();
+    Runnable task = w.firstTask;
+    w.firstTask = null;
+    w.unlock(); // allow interrupts
+    boolean completedAbruptly = true;
+    try {
+        while (task != null || (task = getTask()) != null) {
+            w.lock();
+            // If pool is stopping, ensure thread is interrupted;
+            // if not, ensure thread is not interrupted.  This
+            // requires a recheck in second case to deal with
+            // shutdownNow race while clearing interrupt
+            if ((runStateAtLeast(ctl.get(), STOP) ||
+                 (Thread.interrupted() &&
+                  runStateAtLeast(ctl.get(), STOP))) &&
+                !wt.isInterrupted())
+                wt.interrupt();
+            try {
+                beforeExecute(wt, task);
+                Throwable thrown = null;
+                try {
+                    task.run();
+                } catch (RuntimeException x) {
+                    thrown = x; throw x;
+                } catch (Error x) {
+                    thrown = x; throw x;
+                } catch (Throwable x) {
+                    thrown = x; throw new Error(x);
+                } finally {
+                    afterExecute(task, thrown);
+                }
+            } finally {
+                task = null;
+                w.completedTasks++;
+                w.unlock();
+            }
+        }
+        completedAbruptly = false;
+    } finally {
+        processWorkerExit(w, completedAbruptly);
+    }
+}
+```
+
+### 4.6 阻塞队列
+
+#### 4.6.1 定义
+
+阻塞队列的定义：在队列的基础上，增肌了两个操作：**阻塞的插入，阻塞的删除**
+
+阻塞插入：当队列满时，插入的线程将会被阻塞（普通队列满了，那么插入就会抛出异常 or false）
+
+阻塞删除：当队列空时，插入的线程将被阻塞（普通队列为空，删除就抛出异常 or false）
+
+经典场景：生产者消费者：生产者阻塞的插入，如果满了那么阻塞不再生产；消费者阻塞的删除，如果为空那么阻塞不再拿了
+
+这两种阻塞提供了8种方法：
+
+<img src="../pic/blockingQueue.jpg" style="zoom:67%;" >
+
+前两列和普通的一样，add/remove/element会抛出异常；offer/poll/peek只会返回true/false；
+
+后两列不一样：put/take是一直阻塞；offer/poll会超时等待
+
+#### 4.6.2 Java API
+
+| 队列                    | 描述                                                         |
+| ----------------------- | ------------------------------------------------------------ |
+| `ArrayBlockingQueue`    | 由数组结构组成的**有界**阻塞队列<br />FIFO原则；用ReentrantLock锁实现的并发操作 |
+| `LinkedBlockingQueue`   | 由链表结构组成的**有界**阻塞队列<br />FIFO，默认最大长度为Integer.MAX_VALUE |
+| `PriorityBlockingQueue` | 支持优先级排序的无界阻塞队列<br />优先级排序，默认是自然升序排列，还可以自定义比较器Comparator/实现对象的compareTo方法 |
+| `DelayQueue`            | 使用**优先级队列**实现的无界阻塞队列<br />可以延时获取元素，只有延迟期满才能从队列种获取元素 |
+| `SynchronousQueue`      | 不存储元素的阻塞队列，就是一个中介<br />每一个put操作都被阻塞，直到一个take操作过来，能支持公平访问，默认是非公平策略访问队列 |
+| LinkedTransferQueue     | 由链表结构组成的无界阻塞队列<br />有两个方法tryTransfer()和transfer()，可以直接将生产者产生的内容给消费者，如果失败了，就将内容挂到队尾，并且直到消费者消费才返回 |
+| `LinkedTransferQueue`   | 由链表结构组成的双向阻塞队列<br />可以在两端进行插入和删除操作，能够提高并发性能 |
+
+#### 4.6.3 实现原理
+
+**使用通知模式**
+
+```java
+/** Condition for waiting takes */
+private final Condition notEmpty;		// 如果队列为空时，消费者会挂在这个上面
+
+/** Condition for waiting puts */
+private final Condition notFull;		// 如果队列满时，生产者会挂在这个上面
+```
+
+会调用unsafe.park()方法，然后线程会进入waiting状态
+
+还参考了：
+
+1. https://tech.meituan.com/2020/04/02/java-pooling-pratice-in-meituan.html
 
 
 

@@ -969,7 +969,7 @@ hashMap.clear();
 
 在多线程使用场景中，应该尽量避免使用线程不安全的HashMap，而使用**线程安全的ConcurrentHashMap**
 
-HashMap是线程不安全的举例：https://blog.csdn.net/javageektech/article/details/103650427?utm_medium=distribute.pc_relevant.none-task-blog-baidujs_baidulandingword-0&spm=1001.2101.3001.4242
+HashMap是线程不安全的举例：https://coolshell.cn/articles/9606.html
 
 该例子：主要是两个线程并发插入一个结点到哈希表，并且哈希表处于临界扩容状态，所以每个线程添加元素后都会触发扩容情况
 
