@@ -251,3 +251,7 @@ final boolean transferForSignal(Node node) {
 | `public static void parkUntil(Object blocker, long deadline)` | 限定ddl（1970开始到ddl的毫秒数） |
 
 其内部还是调用了native的方法。
+
+## 2. unsafe方法
+
+在CAS中、park等都是利用了unsafe的方法
