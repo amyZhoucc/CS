@@ -17,3 +17,7 @@
 
 **要我证明我的代码为什么没有错，会不会漏掉数据（就证明你的代码是成立的）**
 
+https://www.nowcoder.com/discuss/629930?channel=-1&source_id=discuss_terminal_discuss_history_nctrack&ncTraceId=9d79f630589846e7a781e1f2fc11039e.252.16180175935294039
+
+2. **Rand5****实现rand3()****和rand7()**
+3. **一个01****字符串，求01****个数相等的最长连续区间是多长。**

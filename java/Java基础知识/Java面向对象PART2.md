@@ -16,7 +16,7 @@
 
 平时在写的时候，没有涉及到父类子类继承，实际上，**每个类都有一个父类Object**，该类没有定义属性，但是定义了一系列方法，如下：这些方法都不要额外导入包，就可以直接使用的，并可以对其进行重写
 
-<img src="C:/Users/surface/Desktop/计算机知识整理/java/pic/image-20201125195445079.png" alt="image-20201125195445079" style="zoom: 50%;" />
+<img src="../pic/image-20201125195445079.png" alt="image-20201125195445079" style="zoom: 50%;" />
 
 例如：getClass()：获得该对象的类名，是Class类的实例对象——完全限定名，是实例方法，eg：`obj.getClass();——class java.lang.Object`
 
@@ -156,7 +156,6 @@ public class ArrowLine extends Line{
 
 6. 注意：因为在使用子类的构造函数时，会默认调用父类的构造函数，如果父类不存在空参数的构造函数，那么子类必须要显式去调用父类的构造函数，即`super(xxx)`；如果存在，那么就会去默认调用空参数的构造函数即可
 
-7. 
 
 ### （2）继承的优势之一：统一处理不同子类对象（多态）
 
@@ -225,7 +224,7 @@ sm.draw();
 
 ——总结：
 
-<img src="C:/Users/surface/Desktop/计算机知识整理/java/pic/image-20201126105016057.png" alt="image-20201126105016057" style="zoom: 50%;" />
+<img src="../pic/image-20201126105016057.png" alt="image-20201126105016057" style="zoom: 50%;" />
 
 ## 2. 继承的细节
 
@@ -487,7 +486,7 @@ ps：final也能用在变量、方法上
 
    
 
-## 3. 继承实现的基本原理（未完）
+## 3. 继承实现的基本原理
 
 首先明确：
 
@@ -764,7 +763,7 @@ public class Child extends Base{
 
 ——但是要注意的，重载的方法的**参数必然要有不同**，否则就会认为是同一个方法
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210227165348017.png" alt="image-20210227165348017" style="zoom:100%;" />
+<img src="..\pic\image-20210227165348017.png" alt="image-20210227165348017" style="zoom:100%;" />
 
 ——任何方法都可以重载，最常见的就是一个类中有多个构造方法，那么这几个构造方法就是重载。
 
