@@ -191,7 +191,13 @@ public static native void arraycopy(Object src, int srcPos,
 StringBuilder sb = new StringBuilder();
 ```
 
-### 2. 查
+### 2. 增
+
+```java
+sb.append("xxx");/sb.append('x');
+```
+
+### 3. 查
 
 ```
 sb.length();		// 获得是当前字符个数（实际个数）
@@ -210,7 +216,7 @@ sb.substring(3, 6)		// 获得指定范围的字符串
 sb.reverse();		// 反转（原数组上）
 ```
 
-### 3. 删
+### 4. 删
 
 ```java
 sb.deleteCharAt(2);			// 删除指定位置的字符
@@ -219,6 +225,6 @@ sb.delete(3, 6);			// 删除[start, end)位置的字符串
 
 # StringBuffer类
 
-跟StringBuilder差不多，只不过在所有的方法上面**加了一个同步锁**而已
+跟StringBuilder差不多，只不过在所有的方法上面**加了一个同步锁(synchronized)**而已
 
 所以性能上：StringBuilder更高。

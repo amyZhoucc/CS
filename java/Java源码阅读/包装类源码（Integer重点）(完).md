@@ -1361,7 +1361,7 @@ why 设置为不可变类呢？
 
 主要目的是检测当前对象是否和另一个对象相等
 
-而再Object类中提供的默认方法等同于`==`
+而在Object类中提供的默认方法等同于`==`
 
 ```java
 public boolean equals(Object obj) {		// 参数是对象类型

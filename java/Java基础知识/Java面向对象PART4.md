@@ -271,6 +271,8 @@ public class AppException extends Exception {		// 类内部，并没有实现什
 
 之前写的`try/catch`，是一个try对应一个catch，实际上**try后面可以跟多个catch**——**每个catch对应一种异常类型**
 
+ps：**try 结构后面有catch或finally中任意一个就可以了**
+
 ```java
 try{
     // 需要执行的代码
@@ -478,7 +480,7 @@ public static void main(String[] args) throws NullPointerException, NumberFormat
 
 2. **对于未受检异常，不要求用throws进行声明的；对于受检异常，一定要用throws进行声明**，eg：IOException——没有声明，就不能抛出
 
-   受检异常，不可以不声明就抛出，可以声明而不抛出。这个情况出现在父类子类中：父类不需要抛出某个异常，但是子类需要抛出，而**子类不能抛出父类没有声明的异常——即子类抛出的异常不能比父类范围大**
+   **受检异常，不可以不声明就抛出，可以声明而不抛出**。这个情况出现在父类子类中：父类不需要抛出某个异常，但是子类需要抛出，而**子类不能抛出父类没有声明的异常——即子类抛出的异常不能比父类范围大**
 
 未受检异常和受检异常：
 

@@ -195,7 +195,7 @@ static final int HASH_BITS = 0x7fffffff; // 除去符号位
 
    4. 如果index存在内容，且该节点 fh==MOVED(代表 forwardingNode,数组正在进行扩容)，那么让他先扩容
 
-   5. 如果不在扩容，那么获得synchronized，后获得index对应的头结点，从头结点开始遍历，如果找到重复的key，那么覆盖之前的value；如果到尾巴也没有找到key，那么将结点插入到尾巴；如果是红黑树，那么按照红黑树的方式插入
+   5. 如果不在扩容，那么**获得synchronized**，后获得index对应的头结点，从头结点开始遍历，如果找到重复的key，那么覆盖之前的value；如果到尾巴也没有找到key，那么将结点插入到尾巴；如果是红黑树，那么按照红黑树的方式插入
 
       如果链表长度超过指定长度之后（>8），那么将链表转换为红黑树；
 
@@ -504,4 +504,4 @@ final Node<K,V>[] resize() {
 
 ## 2. 不采用HashTable的原因
 
-HashTable是最早的并发API，但是它是直接对put、get方法加上**synchronized来保证线程安全**。安全性保证，但是性能很差
+HashTable是最早的并发API，但是它是直接对put、get方法加上**synchronized来保证线程安全**。安全性保证，但是性能很差——加上一个大锁，那么线程不能同时访问该对象，性能就差很多。
