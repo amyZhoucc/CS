@@ -627,3 +627,21 @@ public class Main {
 而b产生的类异常是最底层的：MyException产生
 
 ——由此构成了一条链
+
+## 2. 常见的异常
+
+### 1. RuntimeException
+
+| 异常                              | 说明                                                         |      |
+| --------------------------------- | ------------------------------------------------------------ | ---- |
+| `NullPointerException`            | 空指针异常                                                   |      |
+| `IllegalStateException`           | 非法状态异常                                                 |      |
+| `ClassCastException`              | 非法强制类型转换异常                                         |      |
+| `IllegalArgumentException`        | 参数错误                                                     |      |
+| `NumberFormatException`           | 数字格式异常                                                 |      |
+| `IndexOutOfBoundsException`       | 索引越界异常                                                 |      |
+| `ArrayIndexOutOfBoundsException`  | 数组索引越界异常                                             |      |
+| `StringIndexOutOfBoundsException` | 字符串索引越界异常                                           |      |
+| `ArithmeticException`             | 算数错误                                                     |      |
+| `ArrayStoreException`             | 数组存储异常<br />（发生在数组增加一个元素，而该元素类型不匹配上） |      |
+| `UnsupportedOperationException`   | 未支持操作异常<br />该操作是不被该类允许的（首见于`Iterator`的`remove`） |      |

@@ -9,6 +9,8 @@
 - 引用类型的原子类
 - 更新属性（字段）的原子类
 
+底层就是CAS，具体见[文档](https://github.com/amyZhoucc/CS/blob/main/java/Java%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86/Java%E7%9A%84Lock%E7%9F%A5%E8%AF%86.md#1-cas%E5%8E%9F%E7%90%86%E5%88%86%E6%9E%90)
+
 ## Unsafe类
 
 最本质的就3个方法，其他都是调用这3个方法的：
@@ -24,7 +26,11 @@ public final native boolean compareAndSwapLong(Object var1, long var2, long var4
 
 ## 1. 基本数据类型
 
-有AtomicBoolean、AtomicInteger、AtomicLong3个
+有AtomicBoolean、AtomicInteger、AtomicLong3个：
+
+- AtomicBoolean：原子的Boolean类型，用来原子性的修改某个标志位
+- AtomicInteger：原子的Integer类型，
+- AtomicLong：原子的Long类型，用来生成唯一序列号
 
 ### 1.1 实例变量
 
@@ -164,7 +170,7 @@ public class AtomicIntegerArrayTest {
 
 有3类API：
 
-- AtomicReference：原子更新引用类型；
+- AtomicReference：原子更新引用类型，更新复杂类型；
 - AtomicReferenceFieldUpdater：原子更新引用类型里的字段。
 - AtomicMarkableReference：原子更新带有标记位的引用类
 

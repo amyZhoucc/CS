@@ -4,7 +4,7 @@
 
 1. ArrayList是**非线程安全的**（即多个线程同时修改里面的内容，会发生并发问题），如果要并发修改，需要使用synchronized进行同步。Vector是最早实现的集合类，基本原理和ArrayList类似，内部使用同步锁实现线程安全。但是性能有所降低。所以不需要考虑并发的情况下，ArrayList优先。
 2. 可能抛出的异常：**ConcurrentModificationException**：并发修改异常。（在迭代器遍历时，如果另外一个线程修改了数组的结构，就会触发该异常）
-3. ArrayList 的**容量会根据列表大小自动调整**，每次扩容大小起码是1.5倍。在添加大量元素之前，可以使用ensureCapacity 方法来保证列表有足够空间存放元素。
+3. ArrayList 的**容量会根据列表大小自动调整**，每次扩容大小起码是**1.5倍**。在**添加大量元素之前，可以使用ensureCapacity 方法来保证列表有足够空间存放元素**。
 4. **ArrayList可以存放null**
 5. 由于内部是数组，所以可以实现O(1)时间的查找
 6. ArrayList是一个**泛型容器**，新建ArrayList需要实例化泛型参数，eg：`ArrayList<Integer>arr = new ArrayList<>();` 
@@ -21,7 +21,11 @@ public class ArrayList<E> extends AbstractList<E>
 
 继承自：
 
-实现：Serializable：序列化接口；Cloneable：可进行克隆；RandomAccess 也是一个**标记接口**（本身没有方法，只是做标记，**用于声明类的一种属性**），实现 RandomAccess 表示该类支持快速随机访问——实际上什么也没有实现，是底层数据结构决定的，表明可以随机访问
+实现：
+
+- Serializable：序列化接口，表示该类支持序列化和反序列化；
+- Cloneable：可进行克隆；
+- RandomAccess 也是一个**标记接口**（本身没有方法，只是做标记，**用于声明类的一种属性**），实现 RandomAccess 表示该类支持快速随机访问——实际上什么也没有实现，是**底层数据结构决定的，表明可以随机访问**
 
 标明了随机访问的优点：可以用于一些**通用的算法代码中，它可以根据这个声明而选择效率更高的实现**。比如，**Collections类中有一个方法binarySearch**，在List中进行二分查找，它的实现代码就**根据list是否实现了RandomAccess而采用不同的实现机制**
 
@@ -51,6 +55,8 @@ transient Object[] elementData; // 内部私有数组，如果当前大小不够
 
 elementDate就是内部实际存储的数据元素的地方
 
+——禁止序列化
+
 why设置为object类型，因为在编写ArrayList代码时，并不知道会传入何种类型的对象，所以统一设置为object方便扩展。若只允许特定的类型，会妨碍它成为一个“常规用途”的工具，为用户带来麻烦
 
 ```java
@@ -62,6 +68,8 @@ private int size;// 记录数组当前元素个数，私有，通过size()访问
 ```java
 protected transient int modCount = 0;		// 记录数组的结构性变化次数——是继承自AbstractList的
 ```
+
+——禁止序列化
 
 来**记录修改次数**，主要是在**使用迭代器遍历**的时候，来记录那些发生结构性变化的操作，主要用在**多线程环境下**，防止一个线程在迭代而另一个线程在修改结构。——但是这个只能仅最大可能发现。
 
@@ -81,6 +89,8 @@ public ArrayList() {		// 无参数构造方法
 默认是空数组，没有指定数组的长度和内容
 
 当添加第一个元素时，如果为DEFAULTCAPACITY_EMPTY_ELEMENTDATA的数组，会将扩充到默认大小DEFAULT_CAPACITY（10）。
+
+——懒加载模式
 
 ### 4.2 带参构造方法
 
@@ -117,7 +127,7 @@ public ArrayList(Collection<? extends E> c) {		// 传递了一个ArrayList对象
 }
 ```
 
-ps：构造方法3,`elementData.getClass() != Object[].class`需要额外进行判断，主要是存在		**`Arrays.asList(xxx).toArray()`**，Arrays.asList()会将一个数组转换成ArrayList对象，而这个ArrayList对象是Arrays内部实现的一个类，和这边的ArrayList有所不同，所以toArray的实现也是不同，是直接返回了一个泛型数组`E[] a`，所以需要将数组复制成`Object[]`类型。
+ps：构造方法3,`elementData.getClass() != Object[].class`需要额外进行判断，主要是存在**`Arrays.asList(xxx).toArray()`**，Arrays.asList()会将一个数组转换成ArrayList对象，而这个ArrayList对象是Arrays内部实现的一个类，和这边的ArrayList有所不同，所以toArray的实现也是不同，是直接返回了一个泛型数组`E[] a`，所以需要将数组复制成`Object[]`类型。
 
 ## 5. 实例方法
 
@@ -197,7 +207,7 @@ private static int hugeCapacity(int minCapacity) {
 理解：
 
 1. 可以看到，如果ArrayList通过无参构造方法创建，在第一次扩容（第一次加入内容时），最小扩容为10
-2. 扩容在这里面是最耗费时间的操作，**不仅仅需要重新分配空间，而且需要重新赋值**。
+2. 扩容在这里面是最耗费时间的操作，**不仅仅需要重新分配空间，而且需要重新赋值**——`newArray = Arrays.copyof(oldArray, newCap);`
 3. 这边如果触发扩容，就会改变`elementData`，而其他无变化，那么**对应的`arr.length`变化（数组本身提供的），而size是不会变化的**
 
 ### （3）查
@@ -257,7 +267,9 @@ public int lastIndexOf(Object o) {
 
 ps：从`indexOf`可以发现：**ArrayList中可以存放null值**，在比较时对null值都进行了处理，后面的`remove(object obj)`也符合这个情况
 
-根据index去获取对应下标的对象
+根据index去获取对应下标的对象：
+
+**get访问，会进行边界检查；element访问，不会进行边界检查**
 
 ```java
 public E get(int index) {		// 获得数组中下标对应的元素
