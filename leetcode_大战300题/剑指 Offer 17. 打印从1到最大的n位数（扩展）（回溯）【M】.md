@@ -1,6 +1,6 @@
 # [剑指 Offer 17. 打印从1到最大的n位数](https://leetcode-cn.com/problems/da-yin-cong-1dao-zui-da-de-nwei-shu-lcof/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210307100913233.png" alt="image-20210307100913233" style="zoom:80%;" />
+<img src="pic\image-20210307100913233.png" alt="image-20210307100913233" style="zoom:80%;" />
 
 本题求解很简单，不是关键，关键在于对大数的求解
 
@@ -32,7 +32,7 @@ class Solution {
 
 ​						**全排列**：可以发现每一位的取值都是限制在0~9，我们可以用全排列的方式求解
 
-而全排列的解法：用回溯法：
+而全排列的解法：用回溯法：——只要n不要太大递归的深度不会太深，但是广度很大
 
 ```java
 class Solution{

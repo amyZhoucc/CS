@@ -1,6 +1,6 @@
 # [剑指 Offer 21. 调整数组顺序使奇数位于偶数前面](https://leetcode-cn.com/problems/diao-zheng-shu-zu-shun-xu-shi-qi-shu-wei-yu-ou-shu-qian-mian-lcof/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210316221400620.png" alt="image-20210316221400620" style="zoom:67%;" />
+<img src="pic\image-20210316221400620.png" alt="image-20210316221400620" style="zoom:67%;" />
 
 做到这个题的时候，觉得很像是快排的partition的解法：
 
