@@ -66,7 +66,7 @@ eg：WebP
 
 <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210419113920801.png" alt="image-20210419113920801"  />
 
-## RAS的问题：
+## RSA的问题：
 
 不支持前向保密，即对称密钥是通过公钥进行加密，私钥进行解密的。如果私钥被破解，那么对称密钥也相对的被破解了。
 

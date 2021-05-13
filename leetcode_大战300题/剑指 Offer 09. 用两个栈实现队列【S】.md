@@ -46,7 +46,11 @@ class CQueue {
 
 # 扩展
 
-用队列模拟栈
+## [225. 用队列实现栈](https://leetcode-cn.com/problems/implement-stack-using-queues/)
+
+<img src="pic\image-20210509195832753.png" alt="image-20210509195832753" style="zoom:67%;" />
+
+<img src="pic\image-20210509195848968.png" alt="image-20210509195848968" style="zoom:67%;" />
 
 不要局限在上面的栈模拟队列中，因为栈存在着负负得正的特点——就是先进后出，然后全部pop出去之后，之前的栈顶就在栈底了，恰好符合队列的特性。
 
@@ -97,3 +101,4 @@ class MyStack {
  */
 ```
 
+时间复杂度：入栈操作：O(N)，出栈操作和其他操作都是O(1)，所以均摊起来就是O(1)

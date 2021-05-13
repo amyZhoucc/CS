@@ -1,5 +1,3 @@
-
-
 # [剑指 Offer 58 - I. 翻转单词顺序](https://leetcode-cn.com/problems/fan-zhuan-dan-ci-shun-xu-lcof/)
 
 <img src="pic\image-20210505173129892.png" alt="image-20210505173129892" style="zoom:67%;" />
@@ -14,7 +12,6 @@
 ```java
 class Solution {
     public String reverseWords(String s) {
-        s.trim();      // 去除首尾多余的空格
         StringBuilder sb = new StringBuilder();
         int i = s.length() - 1, j = i;
         while(i >= 0){
@@ -30,7 +27,7 @@ class Solution {
             }
         }
         if(i != j) sb.append(s.substring(i + 1, j + 1) + ' ');
-        return sb.toString().trim();
+        return sb.toString();
     }
 }
 ```
@@ -68,3 +65,11 @@ class Solution {
 ```
 
 如果只能用String，那么将stringBuilder替换成String，然后每次都用string+=，则效率会很低
+
+当然这个还有一个解法：可能用在数组等里面比较恰当：
+
+不需要额外的存储空间，就能将一个数组进行指定的翻转：
+
+**根据指定的index，将数组分成[0, index)和[index, arr.length)，两边分别各自逆序，然后一起逆序，一共三次逆序，最后结果就是所需要的。**
+
+eg：[1, 2, 3, 4, 5, 6], index=3，-> [3, 2, 1, 6, 5, 4] -> [4, 5, 6, 1, 2, 3]

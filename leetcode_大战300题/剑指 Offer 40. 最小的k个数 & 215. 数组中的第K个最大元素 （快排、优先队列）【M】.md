@@ -4,7 +4,7 @@
 
 这个题的考点：多种解法（快排、优先队列），快排的实现
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210315213943738.png" alt="image-20210315213943738"  />
+<img src="pic\image-20210315213943738.png" alt="image-20210315213943738"  />
 
 可以想到：暴力解，即将数组sort一下，然后获取index=k-1的数字，就是topk——时间复杂度为O(NlogN)
 
@@ -162,7 +162,7 @@ class Solution {
 
 # [剑指 Offer 40. 最小的k个数](https://leetcode-cn.com/problems/zui-xiao-de-kge-shu-lcof/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210315213819151.png" alt="image-20210315213819151"  />
+<img src="pic\image-20210315213819151.png" alt="image-20210315213819151"  />
 
 本题和上题一样，只不过这次需要将前面的数字全部输出，本质没有变化。
 
@@ -233,7 +233,7 @@ https://leetcode-cn.com/problems/zui-xiao-de-kge-shu-lcof/solution/3chong-jie-fa
 
 # [347. 前 K 个高频元素](https://leetcode-cn.com/problems/top-k-frequent-elements/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210318101738157.png" alt="image-20210318101738157"  />
+<img src="pic\image-20210318101738157.png" alt="image-20210318101738157"  />
 
 本题本质上还是topk问题，只不过解题流程上稍微需要修改
 
@@ -346,6 +346,43 @@ class Solution {
 ```
 
 参考题解，还提出了一个 解法：**桶排序**（即用哈希表统计每个数字的出现次数后，自己再后构建一个建议的哈希表），长度为nums.length+1的数组（包括0，那么方便插入），每个index代表出现次数，所以最多是整个数组都是同一个数，那么最大出现次数为nums.length。然后遍历哈希表，根据出现次数进行index对应，如果出现相同的出现次数，就创建链表挂在index上。最后从后向前遍历获得k个结点即可
+
+```java
+//基于桶排序求解「前 K 个高频元素」
+class Solution {
+    public List<Integer> topKFrequent(int[] nums, int k) {
+        List<Integer> res = new ArrayList();
+        // 使用字典，统计每个元素出现的次数，元素为键，元素出现的次数为值
+        HashMap<Integer,Integer> map = new HashMap();
+        for(int num : nums){
+            if (map.containsKey(num)) {
+               map.put(num, map.get(num) + 1);
+             } else {
+                map.put(num, 1);
+             }
+        }
+        
+        //桶排序
+        //将频率作为数组下标，对于出现频率不同的数字集合，存入对应的数组下标
+        List<Integer>[] list = new List[nums.length+1];		// 数组，里面的元素是arraylist
+        for(int key : map.keySet()){
+            // 获取出现的次数作为下标
+            int i = map.get(key);
+            if(list[i] == null){
+               list[i] = new ArrayList();
+            } 
+            list[i].add(key);
+        }
+        
+        // 倒序遍历数组获取出现顺序从大到小的排列
+        for(int i = list.length - 1;i >= 0 && res.size() < k;i--){
+            if(list[i] == null) continue;
+            res.addAll(list[i]);
+        }
+        return res;
+    }
+}
+```
 
 参考：
 

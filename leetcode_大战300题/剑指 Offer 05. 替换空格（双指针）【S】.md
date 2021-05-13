@@ -36,6 +36,34 @@ class Solution {
 }
 ```
 
+运用双指针的解法：
+
+```java
+class Solution {
+    public String replaceSpace(String s) {
+        int len = s.length();
+        int count = 0;
+        for(int i = len - 1; i >= 0; i--){      // 遍历统计空格出现的次数
+            if(s.charAt(i) == ' ') count++;
+        }
+        char[] arr = new char[len + count * 2];
+        int j = len - 1;
+        for(int i = arr.length - 1; i >= 0; i--){
+            if(s.charAt(j) == ' '){
+                arr[i--] = '0';
+                arr[i--] = '2';
+                arr[i] = '%';
+                j--;
+            }
+            else{
+                arr[i] = s.charAt(j--);
+            }
+        }
+        return new String(arr);
+    }
+}
+```
+
 参考：
 
 https://leetcode-cn.com/problems/ti-huan-kong-ge-lcof/solution/mian-shi-ti-05-ti-huan-kong-ge-ji-jian-qing-xi-tu-/
@@ -79,4 +107,4 @@ public:
 
 但是现在的问题是，原地修改数组，所以不能从头开始插入，会涉及到数组后面的频繁移动
 
-——从尾巴开始遍历，更大的数放在最后面，需要用到3个指针（A1尾巴指针p1，A1旧数组尾巴指针p2，A2旧数组尾巴指针p3）
+——**从尾巴开始遍历**，更大的数放在最后面，需要用到3个指针（A1尾巴指针p1，A1旧数组尾巴指针p2，A2旧数组尾巴指针p3）

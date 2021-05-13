@@ -12,6 +12,8 @@ $f(n) = max(f(i) * f(n-i)), (i \in (0, n))$
 
 很明显，可以发现有很多重叠的解，那么可以从1开始计算，然后计算到n
 
+——时间复杂度$O(N^2)$
+
 ```java
 class Solution {
     public int cuttingRope(int n) {
@@ -25,7 +27,7 @@ class Solution {
         store[3] = 3;			// 特殊解作为因子（即不拆分）的值：就是其本身
         for(int i = 4; i <= n; i++){
             int max = i;
-            for(int j = 1; j <= i / 2; j++){
+            for(int j = 1; j <= i / 2; j++){			// 避免重复计算
                 int cur = store[j] * store[i - j];
                 if(max < cur){
                     max = cur;
@@ -44,9 +46,11 @@ class Solution {
 
 通过数学推导可以得出：划分成每段为3最优。
 
-每段长度一样长是最优的，且$x^a = x^{\frac{n}{x}} = (x^{\frac{1}{x}})^n$
+显然的，每段长度一样长时是最优的，且$x^a = x^{\frac{n}{x}} = (x^{\frac{1}{x}})^n$
 
 本质上就是求$x^{\frac{1}{x}}$，在x=e处有极大值
+
+时间复杂度O(1)
 
 ```java
 class Solution {

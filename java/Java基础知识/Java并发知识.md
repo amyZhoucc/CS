@@ -902,7 +902,7 @@ synchronzied解决了多线程的竞争问题，但是无法解决多线程的�
 | `wait(long)`      | 超时等待，参数是ms为单位的，如果在限定时间内等到了通知或者中断，那么会提前返回；否则超时后也会返回 |      |
 | `wait(long, int)` | 超时等待的粒度更细，单位为ns                                 |      |
 | `notify()`        | 通知**一个**在对象上等待的线程，让其从wait方法中返回，但是只有获取了锁才能返回，如果获取失败了那么无法返回<br />唤醒哪一个，看OS，结果不一样 |      |
-| `notifyAll()`     | 通知****在对象上等待的线程                                   |      |
+| `notifyAll()`     | 通知**所有**在对象上等待的线程                               |      |
 
 #### 使用方法：
 
@@ -1081,8 +1081,10 @@ public final synchronized void join(long millis) throws InterruptedException {	/
 理解：
 
 1. 如果某个线程调用`threadB.join()`之后，开始等待线程B，如果期间按其他线程调用该线程的interrupt方法，那么会抛出`InterruptException`异常——因为处于wait中
-2. 这边的wait方法，本质上就是**`this.wait()`**，对象就是线程对象，而join方法本身就是synchronized的，所以能在里面执行，它必定已经获取到了`this`锁，所以wait之后，会释放this锁
-3. join本质上，还是wait/notify实现的，当线程终止时，会调用线程自身的notifyAll()方法，会通知所有等待在该线程对象上的线程
+2. 这边的wait方法，本质上就是**`this.wait()`**，**对象就是线程对象**，而join方法本身就是synchronized的，所以能在里面执行，它必定已经获取到了`this`锁，所以wait之后，会释放this锁
+3. **join本质上，还是wait/notify实现的**，当线程终止时，会调用线程自身的notifyAll()方法，会通知所有等待在该线程对象上的线程
+
+——synchronized获得是等待线程threadB的对象，如果获取失败就挂在该threadB对象上；在等待的时候，挂在threadB的等待队列上
 
 ### 3.2.5 ThreadLocal
 
@@ -1223,11 +1225,9 @@ why需要线程池：如果采用一个任务一个线程的方式，将会创�
 
 常用的Java Web服务器，如Tomcat、Jetty，在其处理请求的过程中都使用到了线程池技术。
 
-
-
 # 4. 锁
 
-绍Java并发包中与锁相关的API和组件
+介绍Java并发包中与锁相关的API和组件
 
 这些API和组件的使用方式和实现细节
 

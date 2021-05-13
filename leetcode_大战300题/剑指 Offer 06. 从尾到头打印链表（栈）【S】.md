@@ -59,6 +59,35 @@ class Solution {
  *     ListNode(int x) { val = x; }
  * }
  */
+class Solution {
+    private void dfs(ListNode head, List<Integer>list){
+        if(head == null) return;
+        dfs(head.next, list);
+        list.add(head.val);
+    }
+    public int[] reversePrint(ListNode head) {
+        ArrayList<Integer>list = new ArrayList<>();
+        dfs(head, list);
+        int[] res = new int[list.size()];
+        for(int i = 0; i < list.size(); i++){
+            res[i] = list.get(i);
+        }
+        return res;
+    }
+}
+```
+
+确定数组长度后遍历（不符合题意一点）
+
+```java
+/**
+ * Definition for singly-linked list.
+ * public class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) { val = x; }
+ * }
+ */
 class Solution { 
     private void dfs(ListNode head, int[] res, int count){
         if(head == null) return;

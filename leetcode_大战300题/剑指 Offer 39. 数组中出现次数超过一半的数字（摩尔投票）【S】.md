@@ -1,6 +1,6 @@
 # [剑指 Offer 39. 数组中出现次数超过一半的数字](https://leetcode-cn.com/problems/shu-zu-zhong-chu-xian-ci-shu-chao-guo-yi-ban-de-shu-zi-lcof/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210506233415434.png" alt="image-20210506233415434" style="zoom:67%;" />
+<img src="pic\image-20210506233415434.png" alt="image-20210506233415434" style="zoom:67%;" />
 
 有3种方法可以实现：
 

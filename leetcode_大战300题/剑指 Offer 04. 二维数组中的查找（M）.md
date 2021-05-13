@@ -16,8 +16,6 @@
 
 <img src="pic/offer04.png" style="zoom: 67%;" >
 
-
-
 ```java
 class Solution {
     public boolean findNumberIn2DArray(int[][] matrix, int target) {

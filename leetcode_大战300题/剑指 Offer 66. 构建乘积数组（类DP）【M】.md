@@ -1,7 +1,5 @@
 # [剑指 Offer 66. 构建乘积数组](https://leetcode-cn.com/problems/gou-jian-cheng-ji-shu-zu-lcof/)
 
-<img src="pic\image-20210505162411422.png" alt="image-20210505162411422" style="zoom:67%;" />
-
 本来可以直接for循环一下，将总乘积计算出来，然后每次除去本身即可，但是**不能使用除法**。
 
 所以需要额外的思路：

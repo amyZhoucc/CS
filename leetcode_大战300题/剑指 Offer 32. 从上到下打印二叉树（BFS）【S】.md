@@ -115,3 +115,55 @@ class Solution {
 当然，也可以都按照正序来，但是对于奇数行，每次结果出之后都reverse一下。
 
 ——这种题要是做错了，都对不起自己
+
+由于看面经说面试官不满意上面的解法，说太暴力了，再实现一个解法。
+
+用两个栈实现：odd栈存放的是奇数行，even栈存放的是偶数行：偶数行遍历的时候就是偶数栈出栈，然后按照左、右的顺序入奇数栈；奇数行遍历的时候就是奇数栈出栈，然后按照右、左的顺序入偶数栈
+
+```java
+/**
+ * Definition for a binary tree node.
+ * public class TreeNode {
+ *     int val;
+ *     TreeNode left;
+ *     TreeNode right;
+ *     TreeNode(int x) { val = x; }
+ * }
+ */
+class Solution {
+    public List<List<Integer>> levelOrder(TreeNode root) {
+        if(root == null) return new ArrayList<>();
+        List<List<Integer>> res = new ArrayList<>();
+        Stack<TreeNode>even = new Stack<>();
+        Stack<TreeNode>odd = new Stack<>();
+        even.push(root);
+        while(!even.isEmpty() || !odd.isEmpty()){
+            Stack<TreeNode>stack, stack2;
+            if(res.size() % 2 == 0){
+                stack = even;
+                stack2 = odd;
+            }
+            else{
+                stack = odd;
+                stack2 = even;
+            }
+            ArrayList<Integer>temp = new ArrayList<>();
+            while(!stack.isEmpty()){
+                TreeNode cur = stack.pop();
+                temp.add(cur.val);
+                if(res.size() % 2 != 0){
+                    if(cur.right != null) stack2.push(cur.right);
+                    if(cur.left != null) stack2.push(cur.left);
+                }
+                else{
+                    if(cur.left != null) stack2.push(cur.left);
+                    if(cur.right != null) stack2.push(cur.right);
+                }
+            }
+            res.add(temp);
+        }
+        return res;
+    }
+}
+```
+

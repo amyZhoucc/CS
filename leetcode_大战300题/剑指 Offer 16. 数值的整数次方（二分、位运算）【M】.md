@@ -12,6 +12,8 @@
 
 能够想到用一个二分来求解。
 
+## 二分
+
 ```java
 class Solution {
     public double myPow(double x, int n) {
@@ -29,7 +31,7 @@ class Solution {
 }
 ```
 
-位运算的解法：
+## 位运算的解法：
 
 思想：eg：10 = b1010，那么可以变成$2^8 * 2^2$，所以我们只需要判断n对应二进制有哪几位为1，乘上对应的radix即可
 

@@ -53,3 +53,25 @@ class Solution {
 参考：
 
 https://leetcode-cn.com/problems/diao-zheng-shu-zu-shun-xu-shi-qi-shu-wei-yu-ou-shu-qian-mian-lcof/solution/ti-jie-shou-wei-shuang-zhi-zhen-kuai-man-shuang-zh/
+
+# 扩展
+
+如果要求你写一个通用的将数组划分成两部分的方法，eg：要求实现奇偶划分、实现正负划分、被三整除和不能整除划分等，那么可以用一个通用函数来实现，而比较方法就单独写一个，然后调用该比较方法即可。
+
+可以传递一个Comparator比较器，比较就通过里面的compare方法进行，在调用该方法时，需要实现一个Comparator比较器，然后重写里面的compare方法即可（类似于我们用sort方法时用到的比较器）
+
+```java
+private static void sort(int[] arr, Comparator<Integer>comparator){
+    if(comparator.compare(arr[0], arr[1]) > 0) System.out.println(true);
+}
+public static void main(String[] args){
+    int[] arr = new int[]{1,4,5,8,9,10,12,13};
+    sort(arr, new Comparator<Integer>() {
+        @Override
+        public int compare(Integer o1, Integer o2) {
+            return o2 - o1;
+        }
+    });
+}
+```
+

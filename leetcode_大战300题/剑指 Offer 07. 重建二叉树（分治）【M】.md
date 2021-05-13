@@ -86,24 +86,22 @@ public class TreeLinkNode {
 */
 public class Solution {
     public TreeLinkNode GetNext(TreeLinkNode pNode) {
-        if(pNode == null) return null;			// 排除特殊情况
+        if(pNode == null) return null;
         TreeLinkNode pNext = null;
-        if(pNode.right != null){        // 存在右子树
-            TreeLinkNode pcur = pNode.right;    // 节点的右节点
-            while(pcur.next != null){    // 找到最左叶子结点
-                pcur = pcur.left;
+        if(pNode.right != null){			// 存在右孩子，那么找右孩子的最左结点
+            TreeLinkedNode cur = pNode.right;	// 当前节点
+            while(cur.left != null){			// 找到了最左结点
+                cur = cur.left;
             }
-            pNext = pcur;
+            pNext = cur;		// 最左结点就是下一个结点
         }
-        else if(pNode.next != null){   // 不存在右子树，但也不是根节点（父结点还有）
-            TreeLinkNode parent = pNode.next;    // 结点的父结点
-            TreeLinkNode cur = pNode;    // 结点
-            // 还存在父结点，且当前结点还是父结点的右孩子
-            while(parent != null && cur == parent.right){
+        else if(pNode.next != null){	// pNode是父结点的右孩子，且当前结点存在父结点（非根结点）
+            TreeLinkedNode parent = pNode.next;
+            TreeLinkedNode cur = pNode;
+            while(parent != null && parent.left != cur){	// 存在父结点，且当前节点是父结点的右孩子则一直向上找
                 cur = parent;
-                parent = parent.next;
+                parent = cur.next;		// 向上
             }
-            // 跳出循环：已经找到根节点，但还是不满足要求；已经找到身在左子树的父结点了
             pNext = parent;
         }
         return pNext;
