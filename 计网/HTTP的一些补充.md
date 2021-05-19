@@ -10,7 +10,7 @@
 
 ### 减少HTTP请求
 
-对于重复的HTTP请求，可以在本地保存【请求-响应】对，然后下次遇到同样的请求，可以先查看是否有本地缓存，如果有就可以避免重复请求。
+对于重复的HTTP请求，可以在本地保存【请求-响应】对，然后下次遇到同样的请求，可以先查看是否有**本地缓存**，如果有就可以避免重复请求。
 
 但是，存在缓存一致性问题——缓存过期了？
 
@@ -28,7 +28,7 @@ eg：301、308会让客户端将重定向的URL缓存下来。
 
 #### 合并请求
 
-访问多个小文件的请求，可以合并为访问一个大文件。那么总资源一样，HTTP的头部减少了
+访问多个小文件的请求，可以**合并为访问一个大文件**。那么总资源一样，HTTP的头部减少了
 
 eg：网页包含很多个小图片，可以将这些图片使用`CSS Image Sprites`技术把它们合成合成一个大图片，然后在显示的时候再进行划分
 
@@ -58,7 +58,7 @@ eg：WebP
 
 对于这种三级层级关系的证书的验证过程如下：
 
-1. 客户端收到 baidu.com 的证书后，发现这个证书的签发者不是根证书，就⽆法根据**本地已有的根证书**中的公钥去验证 baidu.com 证书是否可信。于是，客户端根据 baidu.com 证书中的签发者，找到该证书的颁发机构是 “GlobalSign Organization Validation CA - SHA256 - G2”，然后向 CA 请求该中间证书。
+1. 客户端收到 baidu.com 的证书后，发现这个证书的签发者不是根证书，就⽆法根据**本地已有的根证书**中的公钥去验证 baidu.com 证书是否可信。于是，客户端根据 baidu.com 证书中的签发者，找到该证书的颁发机构是 “GlobalSign Organization Validation CA - SHA256 - G2”，然后**向 CA 请求该中间证书**。
 2. 请求到证书后发现 “GlobalSign Organization Validation CA - SHA256 - G2” 证书是由 “GlobalSign Root CA” 签发的，由于 “GlobalSign Root CA” 没有再上级签发机构，说明它是根证书，也就是⾃签证书。应⽤软件会检查此证书有否已预载于根证书清单上，如果有，则可以利⽤**根证书中的公钥去验证 “GlobalSign Organization Validation CA - SHA256 - G2” 证书**，如果发现验证通过，就认为该中间证书是可信的。
 3. “GlobalSign Organization Validation CA - SHA256 - G2” 证书被信任后，可以使⽤ “GlobalSign Organization Validation CA - SHA256 - G2” 证书中的公钥去验证 baidu.com 证书的可信性，如果验证通过，就可以信任baidu.com 证书。
 

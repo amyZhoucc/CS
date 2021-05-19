@@ -51,3 +51,46 @@ while(left <= right){				// 注意边界条件是：left<=right，即left>right�
 if(left > right) System.out.println(left);		// 如果没有找到，left指向就是target适合插入的位置
 ```
 
+# 牛客网上的题
+
+[二分查找II](https://www.nowcoder.com/practice/4f470d1d3b734f8aaf2afb014185b395?tpId=188&tags=&title=&diffculty=0&judgeStatus=0&rp=1&tab=answerKey)
+
+<img src="pic\image-20210514203735064.png" alt="image-20210514203735064" style="zoom: 50%;" />
+
+<img src="pic\image-20210514203757335.png" alt="image-20210514203757335" style="zoom: 50%;" />
+
+主要用到了上面的思想，主要就是查找target-1的数的最后一次出现位置的下一个，那么就是target结点第一次出现的位置，如果未找到，**left就是第一个适合插入的位置**
+
+所以在得到left之后我们需要判断，如果left对应的值是和target一样的，那么返回target；如果不一样，那么说明该结点不存在，返回-1；但是需要注意**left结果可能是num.length，即适合插入在数组最后，所以我们需要获取下标之前进行判断**。
+
+```java
+import java.util.*;
+
+public class Solution {
+    /**
+     * 代码中的类名、方法名、参数名已经指定，请勿修改，直接返回方法规定的值即可
+     *
+     * 如果目标值存在返回下标，否则返回 -1
+     * @param nums int整型一维数组 
+     * @param target int整型 
+     * @return int整型
+     */
+    private int binarySearch(int[] nums, int target){
+        int left = 0, right = nums.length - 1;
+        while(left <= right){
+            int mid = left + (right - left) / 2;
+            if(nums[mid] > target) right = mid - 1;
+            else if(nums[mid] < target) left = mid + 1;
+            else left = mid + 1;		// 相等，则left向右移动指向下一个
+        }
+        return left;
+    }
+    public int search (int[] nums, int target) {
+        // write code here
+        int res = binarySearch(nums, target - 1);
+        if(res == nums.length || target != nums[res]) return -1;
+        else return res;
+    }
+}
+```
+

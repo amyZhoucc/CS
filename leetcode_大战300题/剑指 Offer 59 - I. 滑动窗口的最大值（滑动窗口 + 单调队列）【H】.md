@@ -38,3 +38,35 @@ class Solution {
 }
 ```
 
+——注意特殊情况的处理：
+
+如果k>len，那么直接返回；k=0，那么也要直接返回；
+
+我在牛客上面的解法：
+
+```java
+import java.util.*;
+public class Solution {
+    public ArrayList<Integer> maxInWindows(int [] num, int size) {
+        Deque<Integer>queue = new LinkedList<>();        // 双向链表，模拟单调减队列
+        ArrayList<Integer>res = new ArrayList<>();        // 返回值
+        int len = num.length;
+        if(len < size || size == 0) return res;        // 处理特殊情况
+        for(int i = 0; i < size; i++){        // 先构建出滑动窗口，将前size个值都遍历一遍，放入队列中
+            while(!queue.isEmpty() && queue.peekLast() < num[i]) queue.removeLast();
+            queue.addLast(num[i]);
+        }
+        for(int i = 0; i < len - size; i++){
+            int temp = queue.peekFirst();
+            res.add(temp);
+            if(num[i] == temp) queue.removeFirst();        // 左滑窗向右移动
+            // 右滑窗向右移动
+            while(!queue.isEmpty() && queue.peekLast() < num[i + size]) queue.removeLast();
+            queue.addLast(num[i + size]);
+        }
+        res.add(queue.peekFirst());
+        return res;
+    }
+}
+```
+

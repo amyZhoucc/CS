@@ -108,3 +108,20 @@ public:
 但是现在的问题是，原地修改数组，所以不能从头开始插入，会涉及到数组后面的频繁移动
 
 ——**从尾巴开始遍历**，更大的数放在最后面，需要用到3个指针（A1尾巴指针p1，A1旧数组尾巴指针p2，A2旧数组尾巴指针p3）
+
+<img src="pic\image-20210515135259194.png" alt="image-20210515135259194" style="zoom:67%;" />
+
+```java
+public class Solution {
+    public void merge(int A[], int m, int B[], int n) {
+        int pA = m - 1, pB = n - 1, p = m + n - 1;
+        while(pA >= 0 && pB >= 0){
+            if(A[pA] >= B[pB]) A[p--] = A[pA--];
+            else A[p--] = B[pB--];
+        }
+        while(pA >= 0) A[p--] = A[pA--];
+        while(pB >= 0) A[p--] = B[pB--];
+    }
+}
+```
+

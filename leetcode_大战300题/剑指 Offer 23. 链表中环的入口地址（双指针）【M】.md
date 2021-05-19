@@ -64,3 +64,38 @@ public class Solution {
   `slow = a`——那么正好在环的头相遇了，且只需要走a步即可。
 
 ——这个推导还是要掌握的
+
+
+
+## ps：
+
+如果要求不能使用额外的内存空间，那么该如何实现呢？
+
+可以破坏链表结构，将遍历到的链表结点指向自己，如果发现结点的next=null，那么说明链表有环；如果发现结点next==自己，那么说明遍历到环的入口结点了
+
+```java
+/**
+ * Definition for singly-linked list.
+ * class ListNode {
+ *     int val;
+ *     ListNode next;
+ *     ListNode(int x) {
+ *         val = x;
+ *         next = null;
+ *     }
+ * }
+ */
+public class Solution {
+    public ListNode detectCycle(ListNode head) {
+        if(head == null) return null;
+        while(head.next != null && head.next != head){	// 遍历到链表尾，说明无环 or 遍历到自己了，说明存在环
+            ListNode temp = head.next;
+            head.next = head;
+            head = temp;
+        }
+        if(head.next == null) return null;
+        else return head;
+    }
+}
+```
+
