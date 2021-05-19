@@ -103,6 +103,8 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 
 `git checkout -b dev`，表示创建并切换
 
+（`git checkout -b dev origin/dev` 从远程拉去分支到本地分支中）
+
 `git branch`可以用来查询当前分支。
 
 `git checkout master`切换分支
@@ -110,6 +112,8 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 `git merge xxx`命令用于合并指定分支到当前分支，eg：当前分支是main，那么就是将xxx分支合并到main分支上。
 
 `git branch -d dev`删除分支
+
+如果要丢弃一个没有被合并过的分支，可以通过`git branch -D <name>`强行删除。——大写的-D，表示强制删除
 
 也可以将checkout用switch进行替换：
 
@@ -136,5 +140,106 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 
 前面都是`fast forward`快速合并的模式，`--no-ff`方式的`git merge`——Git就会在merge时生成一个新的commit，这样，从分支历史上就可以看出分支信息。
 
+## Stash
 
+Git还提供了一个`stash`功能，可以把当前工作现场“储藏”起来，等以后恢复现场后继续工作
 
+1. 先将当前现场保存下来：`git stash`
+
+2. 假定需要在`main`分支上修复，就从`main`创建临时分支：切换分支，然后在上面创建临时分支，然后进行代码修改。然后切回到分支，对临时分支进行合并，然后删除临时分支
+
+   ```
+   git switch main
+   
+   git switch -c issue-01
+   git add .
+   git commit -m "fix bugs on issue-01"
+   
+   git switch main
+   git merge -no-ff -m "merge bugs branch" issue-01
+   
+   git switch dev
+   ```
+
+3. `git stash list`可以看当时保护的现场
+
+4. 恢复现场：一是用`git stash apply`恢复，但是恢复后，stash内容并不删除，你需要用`git stash drop`来删除；
+
+   另一种方式是用`git stash pop`，恢复的同时把stash内容也删了
+
+但是存在，如果dev分支也存在和main同样的bug，要在dev上修复，我们只需要把`4c805e2 fix bug 101`这个提交所做的修改“复制”到dev分支。注意：我们只想复制`4c805e2 fix bug 101`这个提交所做的修改，并不是把整个master分支merge过来。
+
+为了方便操作，Git专门提供了一个`cherry-pick`命令，让我们能复制一个**特定的提交到当前分支**
+
+`git cherry-pick 4c805e2`——给dev分支做了一次提交，主要就是将该commitId的分支合并到当前的dev分支上。
+
+## 多人协作模式
+
+查看远程库信息，使用`git remote -v`；本地新建的分支如果不推送到远程，对其他人就是不可见的
+
+多人协作的工作模式通常是这样：
+
+1. 首先，可以试图用`git push origin <branch-name>`推送自己的修改；
+2. 如果推送失败，则因为远程分支比你的本地更新，需要先用`git pull`试图合并；
+3. 如果合并有冲突，则解决冲突，并在本地提交add+commit；
+4. 没有冲突或者解决掉冲突后，再用`git push origin <branch-name>`推送就能成功！
+
+如果`git pull`提示`no tracking information`，则说明本地分支和远程分支的链接关系没有创建，用命令`git branch --set-upstream-to <branch-name> origin/<branch-name>`。
+
+这就是多人协作的工作模式，一旦熟悉了，就非常简单。
+
+## rebase操作
+
+背景：从一个分支中分出两根，然后它们各自又提交了更新，此时需要将这两个分支进行合并，然后回归到原分支，eg：main
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519225050243.png" alt="image-20210519225050243" style="zoom:67%;" />
+
+`merge` 命令：它会把两个分支的最新快照（`C3` 和 `C4`）以及二者最近的共同祖先（`C2`）进行三方合并，合并的结果是生成一个新的快照（并提交）——C5
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519224745652.png" alt="image-20210519224745652" style="zoom:67%;" />
+
+另一个操作是：
+
+```
+git switch experiment			切换到上面分支c4
+git rebase master				将experiment的变化应用到master分支
+
+git switch master				切换到主分支
+git merge experiment			然后将experiment合并到主分支上——这个就是快速合并
+```
+
+——原理：先找到它们的共同祖先，然后对比当前分支相对于该祖先的变化，提取相应的修改形成临时文件，然后将当前分支指向C3，然后将临时文件的修改应用到C3中。于是内容变成了如下的原理：
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519225158469.png" alt="image-20210519225158469" style="zoom:50%;" />
+
+——把分叉的提交历史“整理”成一条直线，看上去更直观。缺点是本地的分叉提交已经被修改过了。
+
+```console
+git rebase --onto master server client
+取出 client 分支，找出它从 server 分支分歧之后的补丁， 然后把这些补丁在 master 分支上重放一遍，让 client 看起来像直接基于 master 修改一样——那么client就直接和master相连了
+
+git checkout master
+git merge client		//将client合并到master
+
+git rebase master server		// 将server合并到master——就被续到了master的最后
+```
+
+## 打tag
+
+发布一个版本时，我们通常先在版本库中打一个标签（tag），这样，就唯一确定了打标签时刻的版本。将来无论什么时候，取某个标签的版本，就是把那个打标签的时刻的**历史版本取出来**。所以，标签也是版本库的一个快照。
+
+Git的标签虽然是版本库的快照，但其实它就是指向某个commit的指针——用tag主要是方便人记忆和沟通
+
+`git tag v1.0`就在当前分支的当前commit下打了tag——默认标签是打在最新提交的commit上的
+
+对于历史的commit，找到历史提交的commit id，然后打上就可以了
+
+`git tag v0.9 f52c633`
+
+还可以创建带有说明的标签，用`-a`指定标签名，`-m`指定说明文字：
+
+`git tag -a v0.1 -m "version 0.1 released" 1094adb`
+
+注意：**如果这个commit既出现在master分支，又出现在dev分支，那么在这两个分支上都可以看到这个标签。**
+
+删除：`git tag -d v0.1`因为创建的标签都只存储在本地，不会自动推送到远程。所以，打错的标签可以在本地安全删除。
