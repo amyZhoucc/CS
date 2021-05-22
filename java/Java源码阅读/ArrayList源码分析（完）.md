@@ -1454,6 +1454,9 @@ public interface Collection<E> extends Iterable<E> {
         return StreamSupport.stream(spliterator(), true);
     }
 }
+
+// 里面唯一一个抽象方法，需要子类去实现
+abstract public E get(int index);// ArrayList根据下标直接去找；LinkedList是通过迭代器去遍历计数找到对应的index的结点
 ```
 
 ## 2. AbstractCollection

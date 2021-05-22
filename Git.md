@@ -243,3 +243,10 @@ Git的标签虽然是版本库的快照，但其实它就是指向某个commit�
 注意：**如果这个commit既出现在master分支，又出现在dev分支，那么在这两个分支上都可以看到这个标签。**
 
 删除：`git tag -d v0.1`因为创建的标签都只存储在本地，不会自动推送到远程。所以，打错的标签可以在本地安全删除。
+
+push到远程：`git push origin v1.0`/`git push origin --tags`推送全部的尚未推送的tag到远程
+
+如果标签已经推送到远程，要删除远程标签就麻烦一点
+
+1. 先从本地删除：`git tag -d v1.0`
+2. 在删除远程的：`git push origin :refs/tags/v0.9`
