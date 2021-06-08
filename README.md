@@ -6,7 +6,7 @@
 
 | Java         | 操作系统   | 计网    | JVM             | leetcode | 计算机基础   | Android | 设计模式 | 数据库 | 工具           | 面筋      |
 | ------------ | ---------- | ------- | --------------- | -------- | ------------ | ------- | -------- | ------ | -------------- | --------- |
-| [:coffee:]()​ | :computer: | :cloud: | :japanese_ogre: | :lion:   | :earth_asia: | :robot: | :deer:   | :memo: | :slot_machine: | :trumpet: |
+| [:coffee:](https://github.com/amyZhoucc/CS/tree/main/java)​ | [:computer:](https://github.com/amyZhoucc/CS/tree/main/os) | [:cloud:](https://github.com/amyZhoucc/CS/tree/main/计网) | [:japanese_ogre:](https://github.com/amyZhoucc/CS/tree/main/jvm) | [:lion:](https://github.com/amyZhoucc/CS/tree/main/leetcode_大战300题)   | :earth_asia: | [:robot:](https://github.com/amyZhoucc/CS/tree/main/android学习笔记) | :deer:   | :memo: | :slot_machine: | :trumpet: |
 
 由于是零基础，所以都是从零开始，整理的不好且速度比较慢，而且我也不知道哪边缺了，只能去其他朋友的网站偷学，如果有热心市民老王，麻烦抓一下虫:
 
