@@ -239,6 +239,10 @@ protected void onCreate(Bundle savedInstanceState) {
 
 然后在该文件夹下面创建新的menu文件，AS会自动认为是特殊的文件夹，所以选择new -> menu resource file -> `main_menu`
 
+
+
+
+
 ```java
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
