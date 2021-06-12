@@ -253,12 +253,6 @@ protected void onCreate(Bundle savedInstanceState) {
 
 理解：
 
-
-
-
-
-
-
 1. 创建两个菜单项，**<item>标签用来创建具体的菜单项**，通过`android:id`作为标识符唯一确定一个元素，同button的标识符`@+id/add_item`，`android:title`：是选项名的具体显示
 
 页面创建完成，但是还缺少逻辑
