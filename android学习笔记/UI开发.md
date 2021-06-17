@@ -13,7 +13,7 @@ Android中最简单的一个控件了，主要就是在页面上显示一段文�
 ```java
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
+    android:orientation="vertical"			// 设定方向
     android:layout_height="match_parent"
     android:layout_width="match_parent">
     <TextView
@@ -36,7 +36,7 @@ Android中最简单的一个控件了，主要就是在页面上显示一段文�
    - `fill_parent`：同上，但是官方更推荐`match_parent`
    - `wrap_content`：当前控件的大小能够刚好包含住里面的内容，**控件内容决定当前控件的大小**
 
-   当然也可以指定一个固定的大小，这可能会存在适配的问题
+   当然也可以指定一个**固定的大小，这可能会存在适配的问题**，单位一般用dp
 
    所以上面控件：宽度和父布局一样，即手机屏幕的宽度一样；高度足够包含住里面的内容就行
 
@@ -62,7 +62,7 @@ Android中最简单的一个控件了，主要就是在页面上显示一段文�
 
 5. TextView可以修改文字的大小和颜色
 
-   **`android:textSize`**属性可以指定文字的大小，字体大小使用sp作为单位
+   **`android:textSize`**属性可以指定文字的大小，**字体大小使用sp作为单位**
 
    通过**`android:textColor`**属性可以指定文字的颜色
 
@@ -277,7 +277,7 @@ ps：根据上面的控件设计可以发现：Android控件的用法基本上�
         android:id="@+id/process_bar" />
 ```
 
-可以看到进度条一直在转（不会停），并且图形默认是在控件中居中的
+可以看到进度条一直在转（不会停），并且图形默认是**在控件中居中**的
 
 <img src="pic\image-20210204143437202.png" alt="image-20210204143437202" style="zoom:50%;" />
 
@@ -288,7 +288,7 @@ ps：根据上面的控件设计可以发现：Android控件的用法基本上�
 有3种属性：
 
 - visible：默认值，不设置该属性，都是默认可见的
-- invisible：不可见，但是仍然占据所在的空间（可以认为是变透明了）
+- invisible：不可见，但是**仍然占据所在的空间**（可以认为是变透明了）
 - gone：消失了，不可见且不占据所在的空间了
 
 但是，xml就是一锤子买卖，在activity创建的时候就加载进去，里面空间的配置就不能变化了——能够通过代码来改变配置的状态**`setVisiablity`——来设置空间的可见状态**，可以传入`View.VISIBLE`、`View.INVISIBLE`和`View.GONE`这3种值
@@ -337,7 +337,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         style="?android:progressBarStyleHorizontal"
-        android:max="100"
+        android:max="100"			// 上限
         android:id="@+id/process_bar" />
 ```
 
@@ -516,7 +516,7 @@ LinerLayout：线性布局，最常用的布局之一。将它所包含的控件
 
    ps：在实验过程中发现，如果设置为水平方向线性，然后将button的`android:layout_width="match_parent"`，可以发现button都重叠在一起了。——因为单独一个控件就会将整个水平方向占满，其他的控件就没有可放置的位置了
 
-   同样的道理，如果LinearLayout的排列方向是vertical，内部的控件就不能将高度指定为match_parent。
+   同样的道理，如果LinearLayout的排列方向是vertical，内部的控件就**不能将高度指定为match_parent**。
 
 2. `android:layout_gravity="xxx"` 和`android:gravity="xxx"`，选项一样，常用的选项：`center/bottom/top`等
 
@@ -586,7 +586,7 @@ LinerLayout：线性布局，最常用的布局之一。将它所包含的控件
 
      <img src="pic\image-20210204200333712.png" alt="image-20210204200333712" style="zoom:50%;" />
 
-     水平方向根据先后顺序排列；垂直方向可以在限定的水平范围内上下移动
+     **水平方向根据先后顺序排列；垂直方向可以在限定的水平范围内上下移动**
 
 3. 重要属性：**`android:layout_weight="xxx"`**，填入数字即可
 
@@ -794,7 +794,7 @@ FrameLayout：帧布局，功能少很多，应用场景少很多。
 
 <img src="pic\image-20210204223339580.png" alt="image-20210204223339580" style="zoom:50%;" />
 
-FrameLayout由于定位方式的欠缺，导致它的应用场景也比较少，不过在下一章中介绍碎片的时会用到它的。
+FrameLayout由于定位方式的欠缺，导致它的应用场景也比较少，不过在下一章中介绍**碎片**的时会用到它的。
 
 ## 4. 百分比布局
 
@@ -884,7 +884,7 @@ PercentRelativeLayout类似，不研究。
 
 <img src="pic/inherited.jpg" style="zoom:50%;" >
 
-所用的所有控件都是直接或间接继承自View的，所用的所有布局都是直接或间接继承自ViewGroup的，而ViewGroup也是继承自View的，所以控件、布局都有一个公共的祖先：View
+**所用的所有控件都是直接或间接继承自View的**，**所用的所有布局都是直接或间接继承自ViewGroup的**，而**ViewGroup也是继承自View的**，所以控件、布局都有一个公共的祖先：View
 
 View：**Android中最基本的一种UI组件，它可以在屏幕上绘制一块矩形区域，并能响应这块区域的各种事件**。所以，使用的各种控件其实就是在View的基础之上又添加了各自特有的功能。而ViewGroup则是一种特殊的View，它可以包含很多子View和子ViewGroup，是一个用于放置控件和布局的容器（递归调用）。
 
@@ -962,7 +962,7 @@ View：**Android中最基本的一种UI组件，它可以在屏幕上绘制一�
 </LinearLayout>
 ```
 
-理解：只需要<include>就可以引入了——<include layout="xxxx" />
+理解：只需要<include>就可以引入了——**<include layout="xxxx" />**
 
 但是，系统会自带一个标题栏，所以需要将默认的标题栏隐藏掉。
 
@@ -987,7 +987,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 ## 2. 创建自定义控件
 
-针对某些控件存在统一的功能，如果这个控件每次使用都要在对应的java文件中注册并且响应，那么又是存在重复代码的问题
+针对某些控件存在**统一的功能**，如果这个控件每次使用都要在对应的java文件中注册并且响应，那么又是存在重复代码的问题
 
 eg：标题栏的返回按钮：都是统一功能——点击之后销毁当前活动，可以写一个统一的代码
 
@@ -1050,9 +1050,9 @@ public class TitleLayout extends LinearLayout {
 </LinearLayout>
 ```
 
-理解：可以将自定义控件看成一个普通的控件，eg: button，导入方法一样，只不过导入的时候需要写的是绝对路径——指明控件的完整类名，即`包名 + 类名`——效果和上面的include一样，只不过这个还增加了逻辑响应。
+理解：可以将自定义控件看成一个普通的控件，eg: button，导入方法一样，只不过导入的时候需要写的是绝对路径——指明控件的完整类名，即`包名 + 类名`——效果和上面的include一样，只不过这个还增加了逻辑响应。-
 
-
+——所以，只需要记住这个版本即可：首先实现一个xml的布局文件，eg：title.xml，然后实现里面的逻辑（继承之前的父类布局，然后选择动态加载inflater，然后实现里面的逻辑），最后使用的时候，将其当作普通的控件，在xml中使用即可
 
 # ListView（最常见的控件）
 
@@ -1084,7 +1084,7 @@ ListView允许用户通过**手指上下滑动的方式**将屏幕外的数据�
 
 可以看到一条条栏目。
 
-但是，此时只是引入了布局，里面还没有填入数据、
+但是，此时只是引入了布局，里面还没有填入数据
 
 ListView是用于展示大量数据的，所以需要有数据——可以是从网上下载的，也可以是从数据库中读取的，应该视具体的应用程序场景而定。
 
@@ -1116,7 +1116,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
    **构造函数的参数：当前的上下文，ListView子项布局的id，数据对象**
 
-   `android.R.layout.simple_list_item_1`是作为ListView子项布局的id，它实际上是Android内置的布局文件，里面只有一个TextView，可以简单的显示一个文本，即数据中的一个条目就是一个子项，就是一个TextView
+   `android.R.layout.simple_list_item_1`是作为ListView子项布局的id，它实际上是**Android内置的布局文件**，里面**只有一个TextView，可以简单的显示一个文本**，即数据中的一个条目就是一个子项，就是一个TextView
 
    ps：Android提供了很多适配器的实现类，但是书中推荐用ArrayAdapter。
 
@@ -1218,7 +1218,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
    3. 另外又重写了**getView()方法**，这个方法在每个子项被滚动到屏幕内的时候会被调用
 
       - 首先通过**`getItem()`**方法得到当前项的Fruit实例
-      - 使用LayoutInflater来为这个子项加载我们传入的布局，首先需要获得当前的上下文`getContext()`，然后调用`inflate()`：需要动态加载的布局文件id，父布局，然后是false——**表示只让我们在父布局中声明的layout属性生效，但不会为这个View添加父布局，因为一旦View有了父布局之后，它就不能再添加到ListView中了**（暂时理解到，这是ListView中的标准写法）
+      - 使用LayoutInflater来为这个子项加载我们传入的布局，首先需要获得当前的上下文`getContext()`，然后调用`inflate()`：**需要动态加载的布局文件id，父布局，然后是false**——**表示只让我们在父布局中声明的layout属性生效，但不会为这个View添加父布局，因为一旦View有了父布局之后，它就不能再添加到ListView中了**（暂时理解到，这是ListView中的标准写法）
       - 之后就是获取该布局中的两个元素`TextView`和`ImageView`的对象，然后对它们分别设置对应的文字和图片——就是当前fruit item的两个属性，然后将该配置好的view返回
 
       ——自定义的适配器就完成了
@@ -1270,11 +1270,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
    ——至此，定制控件已经完成。
 
-   可以发现一个定制的步骤：首先需要定制页面，即创建一个xml文件，将每个item的布局情况定下来，上面就是`fruit_item.xml`；后面一般会创建一个对应的类，将一个item中用到的数据包装成一个对象，对应上面的`Fruit.java`；自定义一个适配器，是继承自ArrayAdapter，然后重写构造方法和getView()方法——将xml文件和其动态绑定起来，并且也将类对象对应起来，对应上面的`FruitAdapter.java`；——定制已经完成
+   可以发现一个定制的步骤：
 
-   使用：在xml文件中就按照普通的ListView的控件的使用方法一样；在java文件中，需要先创建好数据，然后创建一个自定义适配器的对象，调用构造方法将参数传递过去即可，然后用ListView的setAdapter导入该对象即可。
-
+   1. 首先需要**定制页面，即创建一个xml文件，将每个item的布局情况定下来**，上面就是`fruit_item.xml`；
+   2. 后面一般会**创建一个对应的类，将一个item中用到的数据包装成一个对象**，对应上面的`Fruit.java`；
+   3. **自定义一个适配器，是继承自ArrayAdapter**，然后**重写构造方法和getView()方法**——将xml文件和其动态绑定起来，并且也将类对象对应起来，对应上面的`FruitAdapter.java`；
    
+   ——定制已经完成
+   
+   使用：
+   
+   1. 在xml文件中就按照普通的ListView的控件的使用方法一样；
+   2. 在java文件中，需要先创建好数据，然后创建一个自定义适配器的对象，调用构造方法将参数传递过去即可，然后用ListView的setAdapter导入该对象即可。
 
 ## 3. 提升ListView的运行效率
 
@@ -1313,7 +1320,7 @@ public class FruitAdapter extends ArrayAdapter<Fruit> {
         View view;
         ViewHolder viewHolder;
         if (convertView == null){
-            view =LayoutInflater.from(getContext()).inflate(rID, parent, false);
+            view = LayoutInflater.from(getContext()).inflate(rID, parent, false);
             viewHolder = new ViewHolder();
             viewHolder.imageView = (ImageView) view.findViewById(R.id.fruit_img);
             viewHolder.textView = (TextView) view.findViewById(R.id.fruit_name);
@@ -1337,10 +1344,10 @@ public class FruitAdapter extends ArrayAdapter<Fruit> {
 理解：
 
 1. 新增了一个内部类ViewHolder，用于对控件的实例进行缓存
-2. 当convertView为null的时候，创建一个ViewHolder对象，并将控件的实例都存放在ViewHolder里，然后调用View的setTag()方法，将ViewHolder对象存储在View中。
+2. 当convertView为null的时候，创建一个ViewHolder对象，并将控件的实例都存放在ViewHolder里，然后调用View的setTag()方法，将**ViewHolder对象存储在View中**。
 3. 当convertView不为null的时候，则调用View的getTag()方法，把ViewHolder重新取出。这样所有控件的实例都缓存在了ViewHolder里，就没有必要每次都通过findViewById()方法来获取控件实例了。
 
-——可以发现，性能修改就在构造的适配器中，减去不需要的重复操作，用缓存保存避免重新加载——`convertView`是默认的缓存；而`View`可以提供显式的缓存，`setTag`和`getTag`对应使用，可以获得之前的缓存
+——可以发现，性能修改就在构造的适配器中，减去不需要的重复操作，用**缓存保存避免重新加载**——`convertView`是默认的缓存；而`View`可以提供显式的缓存，`setTag`和`getTag`对应使用，可以获得之前的缓存
 
 ## 4. ListView的点击事件
 
@@ -1369,8 +1376,6 @@ protected void onCreate(Bundle savedInstanceState) {
 使用`setOnItemClickListener()`可以注册一个item的监听器，传递的参数是`OnItemClickListener`类型，是AdapterView的内部接口，这边同`View.OnClickListener`，实现一个匿名内部类，然后实现`onItemClick`的方法
 
 如果用户点击了任何一个item就会回调onItemClick()方法。在这个方法中可以通过**position参数**判断出用户点击的是哪一个子项，然后获取到相应的水果，并通过Toast将水果的名字显示出来。
-
-
 
 # 滚动控件RecyclerView
 
@@ -1528,7 +1533,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 理解：调用LinearLayoutManager的**`setOrientation()`**方法来设置布局的排列方向，默认是纵向排列的，我们传入**`LinearLayoutManager.HORIZONTAL`**表示让布局横行排列，这样RecyclerView就可以横向滚动了。
 
-能够简单实现的原因：得益于RecyclerView出色的设计。ListView的布局排列是由自身去管理的，而RecyclerView则将这个工作交给了LayoutManager, LayoutManager中制定了一套可扩展的布局排列接口，子类只要按照接口的规范来实现，就能定制出各种不同排列方式的布局了。
+能够简单实现的原因：得益于RecyclerView出色的设计。ListView的布局排列是由自身去管理的，而RecyclerView则将这个工作交给了LayoutManager, **LayoutManager中制定了一套可扩展的布局排列接口**，子类只要按照接口的规范来实现，就能定制出各种不同排列方式的布局了。
 
 并且，RecyclerView还提供了`GridLayoutManager`和`StaggeredGridLayoutManager`这两种内置的布局排列方式。**GridLayoutManager可以用于实现网格布局**，**StaggeredGridLayoutManager可以用于实现瀑布流布局**.
 
@@ -1587,7 +1592,7 @@ RecyclerView并没有提供类似于setOnItemClickListener()这样的注册监�
 
 总结：RecyclerView的点击事件需要自行实现，那么能够自行设计，灵活度更大。
 
-首先需要明确：每个组件都是可以单独响应的，只要获得该对象，设置监听器，并且实现`View.onClickListener()`的`onClick()`方法，就可以了：
+首先需要明确：**每个组件都是可以单独响应的，只要获得该对象，设置监听器，并且实现`View.onClickListener()`的`onClick()`方法，就可以了**：
 
 ```java
 static class ViewHolder extends RecyclerView.ViewHolder{
@@ -1903,8 +1908,6 @@ public class MainActivity extends AppCompatActivity {
 然后使用`recyclerView.scrollToPosition(msgList.size()-1)`显式的数据定位到最后一行，那么最新发出的消息一定能被看到：
 
 <img src="pic\image-20210208235154622.png" alt="image-20210208235154622" style="zoom:50%;" />
-
-``
 
 
 

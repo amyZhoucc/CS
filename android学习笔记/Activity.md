@@ -239,10 +239,6 @@ protected void onCreate(Bundle savedInstanceState) {
 
 然后在该文件夹下面创建新的menu文件，AS会自动认为是特殊的文件夹，所以选择new -> menu resource file -> `main_menu`
 
-
-
-
-
 ```java
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
@@ -550,7 +546,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 ps：可以在<intent-filter>标签中再配置一个<data>标签，用于更精确地指定当前活动能够响应什么类型的数据
 
-——即通过<data>可以对传递的网址进行一定的限制，不满足配置要求的，activity都不会响应该intent
+——即**通过<data>可以对传递的网址进行一定的限制**，不满足配置要求的，activity都不会响应该intent
 
 - android:scheme：用于指定数据的协议部分，如上例中的http部分
 - android:host：用于指定数据的主机名部分，如上例中的www.baidu.com部分
@@ -576,8 +572,8 @@ ps：可以在<intent-filter>标签中再配置一个<data>标签，用于更精
 
 理解：
 
-1. 前面说的intent的构造函数传参是**`Intent.ACTION_VIEW`**，是Android系统内置的动作，其常量值为`android.intent.action.VIEW`，所以这边直接就设置为这个常量值
-2. 注意需要写data，且配置了android:scheme指定了数据的协议必须是http协议，那么才能和浏览器一样才能响应打开网页的intent
+1. 前面说的intent的构造函数传参是**`Intent.ACTION_VIEW`**，是Android系统内置的动作，其常量值为`android.intent.action.VIEW`，所以这边**直接就设置为这个常量值**
+2. 注意需要写data，且配置了android:scheme指定了数据的协议必须是**http协议**，那么才能和浏览器一样才能响应打开网页的intent
 
 运行之后有如下的效果：
 
@@ -610,7 +606,7 @@ protected void onCreate(Bundle savedInstanceState) {
 ——打电话、查网页、定位等都是和上面同样的操作过程：
 
 - intent对象创建（但是传入的参数是不同的），浏览器是Intent.ACTION_VIEW，打电话是Intent.ACTION_DIAL
-- 处理数据Uri.parse(“xxx:xxxx”)，注意这边的xxx，就是http/geo/tel，代表不同的协议
+- 处理数据Uri.parse(“xxx:xxxx”)，注意这边的xxx，就是**http/geo/tel，代表不同的协议**
 - 传入data：setData
 
 ## 3. 向下一个活动传递数据
@@ -772,7 +768,7 @@ public void onBackPressed() {
 
 ## 1. 返回栈
 
-activity有点类似于进程，activity可以层叠的。我们每启动一个新的活动，就会覆盖在原活动之上，然后点击Back键会销毁最上面的活动，下面的一个活动就会重新显示出来——很显然，这就有栈的特点
+activity有点类似于进程，activity可以层叠的。我们每启动一个新的活动，就会覆盖在原活动之上，然后点击Back键会销毁最上面的活动，下面的一个活动就会重新显示出来——很显然，这就有**栈**的特点
 
 Android是使用**任务（Task）**来管理活动的，一个任务就是一组存放在栈里的活动的集合，这个栈也被称作**返回栈**（Back Stack）。每当我们启动了一个新的活动，它会在返回栈中入栈，并处于栈顶的位置。而每当我们按下Back键或调用finish()方法去销毁一个活动时，处于栈顶的活动会出栈，这时前一个入栈的活动就会重新处于栈顶的位置。**系统总是会显示处于栈顶的活动给用户**。
 
@@ -784,7 +780,7 @@ activity最多有4个状态（类似于os的线程的多状态）
 
 - 暂停状态：当一个活动**不再处于栈顶位置，但仍然可见**时，这时活动就进入了暂停状态，处于暂停状态的活动仍然是完全存活着的。系统不会去回收（只有在内存极低的情况下，系统才会去考虑回收这种活动）
 
-  这个出现在：并不是每一个活动都会占满整个屏幕的，比如对话框形式的活动只会占用屏幕中间的部分区域，所以其他显式部分的活动就处于暂停状态
+  这个出现在：**并不是每一个活动都会占满整个屏幕的**，比如**对话框形式的活动**只会占用屏幕中间的部分区域，所以其他显式部分的活动就处于**暂停状态**
 
 - 停止状态：当一个活动**不再处于栈顶位置，并且完全不可见的时候**，就进入了停止状态。系统仍然会为这种活动保存相应的状态和成员变量，但是这并不是完全可靠的，当内存不足的时候，也会被系统回收
 
@@ -794,10 +790,10 @@ activity最多有4个状态（类似于os的线程的多状态）
 
 Activity类中定义了7个回调方法，覆盖了活动生命周期的每一个环节
 
-- **onCreate()**：每个活动中我们都重写了这个方法，是**活动的创建**。它会在活动第一次被创建的时候调用。在这个方法中完成**活动的初始化操作**，比如说加载布局、绑定事件等
-- **onStart()**：在活动由不可见变为可见的时候调用
-- **onResume()**：在活动准备好和用户进行交互的时候调用。此时的活动一定位于返回栈的栈顶，并且处于运行状态。
-- **onPause()**：在系统准备去启动或者恢复另一个活动的时候调用。通常会在这个方法中将一些消耗CPU的资源释放掉，以及保存一些关键数据，但这个方法的执行速度一定要快，不然会影响到新的栈顶活动的使用。
+- **onCreate()**：每个活动中我们都重写了这个方法，是**活动的创建**。它会在活动第一次被创建的时候调用。在这个方法中完成**活动的初始化操作**，比如说**加载布局、绑定事件**等
+- **onStart()**：在活动由**不可见变为可见**的时候调用
+- **onResume()**：在活动准备好和用户进行交互的时候调用。此时的活动**一定位于返回栈的栈顶，并且处于运行状态**。
+- **onPause()**：在系统准备去**启动或者恢复另一个活动的时候调用**。通常会在这个方法中将一些消耗CPU的资源释放掉，以及保存一些关键数据，但这个方法的执行速度一定要快，不然会影响到新的栈顶活动的使用。
 - **onStop()**：在活动完全不可见的时候调用。
 - **onDestroy()**：在活动被销毁之前调用，之后活动的状态将变为销毁状态。
 - **onRestart()**：活动由停止状态变为运行状态之前调用，也就是活动被重新启动了。
@@ -838,7 +834,7 @@ Activity类中定义了7个回调方法，覆盖了活动生命周期的每一�
 </application>
 ```
 
-理解：`android:theme="xxxx"`用于给当前活动指定主题的，Android系统内置有很多主题可以选择，也可以定制自己的主题
+理解：**`android:theme="xxxx"`用于给当前活动指定主题的**，Android系统内置有很多主题可以选择，也可以定制自己的主题
 
 ```java
 public class MainActivity extends AppCompatActivity {
@@ -936,18 +932,20 @@ public class MainActivity extends AppCompatActivity {
 
 eg：MainActivity中有一个文本输入框，输入了一段文字后启动NormalActivity，这时MainActivity由于系统内存不足被回收掉，这时Back键回到MainActivity，MainActivity还在但是刚刚输入的文字全部都没了，因为MainActivity被重新创建了。
 
-Activity中还提供了一个**`onSaveInstanceState()`**回调方法：可以保证在活动被回收之前一定会被调用，因此我们可以通过这个方法来**解决活动被回收时临时数据得不到保存的问题**。
+Activity中还提供了一个**`onSaveInstanceState()`**回调方法：该方法可以保证在活动被回收之前一定会调用该方法，因此我们可以通过这个方法来**解决活动被回收时临时数据得不到保存的问题**。
 
 onSaveInstanceState()方法会携带一个Bundle类型的参数，Bundle提供了一系列的方法用于保存数据，比如可以使用putString()方法保存字符串，使用putInt()方法保存整型数据....
 
 每个保存方法需要传入两个参数，第一个参数是键，用于后面从Bundle中取值，第二个参数是真正要保存的内容
+
+而恢复：实际上就是**`onCreate`默认有一个传参：Bundle类型的参数，默认是null，而如果调用了`saveInstanceState`，那么该bundle参数就是之前保存数据的参数outState**
 
 ```java
 // 重写方法，数据保存处
 public void onSaveInstanceState(@NonNull Bundle outState, @NonNull PersistableBundle outPersistentState) {
     super.onSaveInstanceState(outState, outPersistentState);
     String tempData = "instancestate";
-    outState.putString("key", tempData);
+    outState.putString("key", tempData);			// 保存在Bundle类型的数据中
 }
 
 // 数据获取处
@@ -967,6 +965,8 @@ protected void onCreate(Bundle savedInstanceState) {		// onCreate的传参就是
 
 1. 使用Bundle对象来保存数据，`bundle.putString(key,value)`，来实现数据保存
 2. 使用`getString(key)`方法来获取保存的数据
+
+ps：Intent还可以结合Bundle一起用于传递数据。首先我们可以把需要传递的数据都保存在Bundle对象中，然后再将Bundle对象存放在Intent里。到了目标Activity之后，先从Intent中取出Bundle，再从Bundle中一一取出数据
 
 # Activity的启动模式
 
@@ -1014,7 +1014,7 @@ protected void onCreate(Bundle savedInstanceState) {
 
 ## 2. singleTop
 
-在singleTop模式下，在启动活动时**如果发现返回栈的栈顶已经是该活动，则认为可以直接使用它，不会再创建新的活动实例**，即栈顶活动不会被重复创建实例。如果创建的是非栈顶的活动，那么还是存在重复创建的情况。
+在singleTop模式下，在启动活动时**如果发现返回栈的栈顶已经是该活动，则认为可以直接使用它，不会再创建新的活动实例**，即栈顶活动不会被重复创建实例。如果创建的是**非栈顶的活动，那么还是存在重复创建的情况**。
 
 ```xml
 <activity
@@ -1112,9 +1112,9 @@ protected void onDestroy() {
 
 ## 4. singleInstance
 
-在singleInstance模式下，活动会启用一个新的返回栈来管理这个活动
+在singleInstance模式下，活动会**启用一个新的返回栈来管理这个活动**
 
-意义在于：有一个活动是允许其他程序调用的，会有一个单独的返回栈来管理这个活动，不管是哪个应用程序来访问这个活动，都共用的同一个返回栈，也就解决了共享活动实例的问题。
+意义在于：有一个活动是允许其他程序调用的，会有一个单独的返回栈来管理这个活动，不管是哪个应用程序来访问这个活动，**都共用的同一个返回栈，也就解决了共享活动实例的问题**。
 
 代码修改：
 
@@ -1169,15 +1169,17 @@ protected void onCreate(Bundle savedInstanceState) {
 }
 ```
 
-可以发现流程MyActivity启动SecondActivity，而SecondActivity能启动ThirdActivity，由于SecondActivity的启动模式是`singleInstance`，是单独创建一个返回栈存放的，所以可以通过log发现，SecondActivity真的属于不同的栈，而由其启动的ThirdActivity又回到了前一栈中。所以SecondActivity所属的栈只有一个活动。并且除非被destory，如果MyActivity启动SecondActivity，不会创建新的SecondActivity和返回栈，而是用之前创建的
-
-ps：可以发现，不同栈之间的切换动画是不同的。MyActivity到SecondActivity是切换了栈，所以是横着的动画；SecondActivity到ThirdActivity也是横着的；然后back键，ThirdActivity到MyActivity，在同一栈中，是上下的动画（它们属于同一个栈，所以back直接返回到了MyActivity）——该栈空了之后，又切换到SecondActivity的栈，此时又是横着的动画，最后back键后，退出程序
+可以发现流程MyActivity启动SecondActivity，而SecondActivity能启动ThirdActivity，由于SecondActivity的启动模式是`singleInstance`，是单独创建一个返回栈存放的，所以可以通过log发现，SecondActivity真的属于不同的栈，而由其启动的ThirdActivity又回到了前一栈中。所以SecondActivity所属的栈只有一个活动。并且除非被destory，如果MyActivity启动SecondActivity，不会创建新的SecondActivity和返回栈，而是用之前创建的。
 
 <img src="pic\image-20210203143748272.png" alt="image-20210203143748272" style="zoom:50%;" />
 
+如果从third中开始返回：
+
+third被销毁，first成为栈顶 --> first开始显示 --> first被销毁，当前栈为空，切换到另一个栈 --> second开始显示 --> second被销毁，程序退出——所以就是下面的流程图
+
 <img src="pic/singleInstance.jpg" style="zoom: 40%;" >
 
-
+ps：可以发现，不同栈之间的切换动画是不同的。MyActivity到SecondActivity是切换了栈，所以**不同的栈是横着的动画**；SecondActivity到ThirdActivity也是横着的；然后back键，ThirdActivity到MyActivity，**在同一栈中，是上下的动画**（它们属于同一个栈，所以back直接返回到了MyActivity）——该栈空了之后，又切换到SecondActivity的栈，此时又是横着的动画，最后back键后，退出程序。
 
 # Activity的实践Tip
 
@@ -1198,6 +1200,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
+// 所有activity的新父类
 public class BaseActivity extends AppCompatActivity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
