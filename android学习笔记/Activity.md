@@ -24,7 +24,6 @@
 
 ```java
 public class MyActivity extends AppCompatActivity {
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -111,7 +110,7 @@ public class MyActivity extends AppCompatActivity {
 
 理解：
 
-1. `setContentView()`：就是给该活动增加一个布局，添加使用该资源的id来进行区分：项目中添加的任何资源都会在R文件中生成一个相应的资源id
+1. **`setContentView()`：就是给该活动增加一个布局，添加使用该资源的id来进行区分：项目中添加的任何资源都会在R文件中生成一个相应的资源id**
 
 ## 3. AndroidManifest文件中注册（会自动注册）
 
