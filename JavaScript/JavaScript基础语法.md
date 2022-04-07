@@ -20,7 +20,7 @@ JavaScript一般也直接放在网页中。
 
 浏览器执行逻辑：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220330134028003.png" alt="image-20220330134028003" style="zoom:77%;" />
+<img src="pic\image-20220330134028003.png" alt="image-20220330134028003" style="zoom:77%;" />
 
 **JavaScript有一个事件机制**，可以在网页上发生某个事件后才触发对应的JavaScript代码
 
@@ -333,7 +333,7 @@ JavaScript代码可以放在<script>标签中，也可以放在事件处理器�
 
    会创建弹窗，将输入的内容作为返回值赋值
 
-   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220330192809116.png" alt="image-20220330192809116" style="zoom:40%;" />
+   <img src="pic\image-20220330192809116.png" alt="image-20220330192809116" style="zoom:40%;" />
 
 2. ==**document.getElementById("xxx")**==通过标签的id获取结构树上的某个HTML域内容（本质上是个对象），从而修改它的内容、格式等
 
@@ -345,7 +345,7 @@ JavaScript代码可以放在<script>标签中，也可以放在事件处理器�
 
    `document.getElementById("decision").className = "decisionReverse"`
 
-   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220405212706506.png" alt="image-20220405212706506" style="zoom:50%;" />
+   <img src="pic\image-20220405212706506.png" alt="image-20220405212706506" style="zoom:50%;" />
 
    比较：style属性后可以修改少量样式
 
@@ -394,7 +394,7 @@ eg：`setTimeOut("alert('wake up')", 6000)`
 
 ==**var res = confirm("xxx")**== 出现是否确认的弹窗，点击确认，就会返回true；否则，返回false
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220401153150536.png" alt="image-20220401153150536" style="zoom:50%;" />
+<img src="pic\image-20220401153150536.png" alt="image-20220401153150536" style="zoom:50%;" />
 
 ## 浏览器给JS开放的权限
 
@@ -443,9 +443,9 @@ function earseCookie(name){
 
 VSCode里面安装一个Live Server
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220401131813575.png" alt="image-20220401131813575" style="zoom:50%;" />
+<img src="pic\image-20220401131813575.png" alt="image-20220401131813575" style="zoom:50%;" />
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220401131842445.png" alt="image-20220401131842445" style="zoom:80%;" />
+<img src="pic\image-20220401131842445.png" alt="image-20220401131842445" style="zoom:80%;" />
 
 点击go live按钮，就会开启服务
 
@@ -517,7 +517,7 @@ HTML的标签<form></form>，里面的元素是按照键值对的形式存储的
     </body>
 ```
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220402203132788.png" alt="image-20220402203132788" style="zoom:57%;" />
+<img src="pic\image-20220402203132788.png" alt="image-20220402203132788" style="zoom:57%;" />
 
 类似如上的形式
 
@@ -592,7 +592,7 @@ function validateZipCodePattern(inputField, helpMessage){
 
 eg2：`/^\w+@\w+\.\w{2,3}$/`邮件的规则
 
-eg3：<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220405162801501.png" alt="image-20220405162801501" style="zoom:45%;" />（更复杂的邮件规则）
+eg3：<img src="pic\image-20220405162801501.png" alt="image-20220405162801501" style="zoom:45%;" />（更复杂的邮件规则）
 
 `/^[\w\.-\+]+@[\w-]+(\.\w{2,4})+$/`
 

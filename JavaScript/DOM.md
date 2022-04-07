@@ -16,7 +16,7 @@ DOM还有很多特性：
 4. ==**firstChild**==：节点下的第一个节点
 5. ==**lastChild**==：节点下的最后一个节点
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220405205905415.png" alt="image-20220405205905415" style="zoom:50%;" />
+<img src="pic\image-20220405205905415.png" alt="image-20220405205905415" style="zoom:50%;" />
 
 里面的内容是story元素的第一个孩子（唯一一个）
 
