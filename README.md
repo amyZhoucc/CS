@@ -4,11 +4,13 @@
 
 目前有的：
 
-|                            Java                            |                             OS                             |                             计网                             |                             JVM                              |                           Leetcode                           |                          计算机基础                          |                           Android                            |
-| :--------------------------------------------------------: | :--------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| [:coffee:](https://github.com/amyZhoucc/CS/tree/main/java) | [:computer:](https://github.com/amyZhoucc/CS/tree/main/os) | [:cloud:](https://github.com/amyZhoucc/CS/tree/main/%E8%AE%A1%E7%BD%91) | [:japanese_ogre:](​https://github.com/amyZhoucc/CS/tree/main/jvm) | [:lion:](​https://github.com/amyZhoucc/CS/tree/main/leetcode_%E5%A4%A7%E6%88%98300%E9%A2%98) | [:earth_asia:](​https://github.com/amyZhoucc/CS/tree/main/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86) | [:robot:](https://github.com/amyZhoucc/CS/tree/main/android%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0) |
-| **设计模式** | **Kotlin** | **前端基础** | **数据库** | **工具** | **面筋** |  |
-| [:deer:](https://github.com/amyZhoucc/CS/tree/main/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F) | :man: |                         :spider_web:                         | :memo: | [:slot_machine:](https://github.com/amyZhoucc/CS/tree/main/%E5%B7%A5%E5%85%B7) | [:trumpet:](https://github.com/amyZhoucc/CS/tree/main/%E7%83%A4%E9%9D%A2%E7%AD%8B) |  |
+|                             Java                             |                             OS                             |                             计网                             |                             JVM                              |                           Leetcode                           |                          计算机基础                          |                           Android                            |
+| :----------------------------------------------------------: | :--------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
+|  [:coffee:](https://github.com/amyZhoucc/CS/tree/main/java)  | [:computer:](https://github.com/amyZhoucc/CS/tree/main/os) | [:cloud:](https://github.com/amyZhoucc/CS/tree/main/%E8%AE%A1%E7%BD%91) | [:japanese_ogre:](​https://github.com/amyZhoucc/CS/tree/main/jvm) | [:lion:](​https://github.com/amyZhoucc/CS/tree/main/leetcode_%E5%A4%A7%E6%88%98300%E9%A2%98) | [:earth_asia:](​https://github.com/amyZhoucc/CS/tree/main/%E8%AE%A1%E7%AE%97%E6%9C%BA%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86) | [:robot:](https://github.com/amyZhoucc/CS/tree/main/android%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0) |
+|                         **设计模式**                         |                         **Kotlin**                         |                         **前端基础**                         |                        **JavaScript**                        |                           **工具**                           |                           **面筋**                           |                                                              |
+| [:deer:](https://github.com/amyZhoucc/CS/tree/main/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F) |                           :man:                            |                         :spider_web:                         |    [:memo:](https://github.com/amyZhoucc/CS/tree/main/js)    | [:slot_machine:](https://github.com/amyZhoucc/CS/tree/main/%E5%B7%A5%E5%85%B7) | [:trumpet:](https://github.com/amyZhoucc/CS/tree/main/%E7%83%A4%E9%9D%A2%E7%AD%8B) |                                                              |
+
+
 由于是零基础，所以都是从零开始，整理的不好且速度比较慢，而且我也不知道哪边缺了，只能去其他朋友的网站偷学，如果有热心市民老王，麻烦抓一下虫:
 
 网上很火的，cyc、JavaGuide我基本是过了一遍理论之后作为查漏补缺用的，个人不喜欢背八股文所以大部分都只是做了理解，所以内容会很繁琐，但是理解了就不用背很多东西还是很爽的
@@ -107,17 +109,19 @@
 
 10. **前端**
 
-   前端客户端不分家嘛，还是都要学的，但是有点杂，需要收集学习的重点
+   前端客户端不分家嘛，还是都要学的，但是有点杂，需要收集学习的重点，目前想到的HTML、CSS的基础捡一下，JavaScript单独成一个板块
 
-   :bookmark_tabs:进度：TypeScript（JavaScript的基础上）
+   :bookmark_tabs:进度：有一点基础，但是需要捡起来
 
    :flags: 
 
-9. 数据库
+9. JavaScript
 
-   :bookmark_tabs:进度：没学过（苦涩:sweat_smile: ），毫无了解，用过一点select等的
+   :bookmark_tabs:进度：《head first JavaScript》过了一遍，感觉没学到啥，所以根据网上的推荐，物色了两本好书准备好好学一下（至少前面几章要好好读一下）
 
-   :flags: 根据面经，去了解一点，够做题和面试就行了
+   :flags: 《JavaScript 高级程序设计》正在看，俗称红宝书，详细是真的详细，就是知识点太细了（有些可以有，但是作为初学者没必要），所以非必要的就会标记一下，其他的都会整理成笔记
+
+   :flags: 《JavaScript DOM 编程艺术》看了前面几章，写的很有条理，也能把握到重点，边看边整理出笔记吧
 
 10. 工具
 
@@ -129,4 +133,4 @@
 
     :bookmark_tabs:进度：从777那边抄作业抄了不少，后面需要加上自己实际面试的内容，和牛客上无穷无尽的面经
 
-——zcc要毕业啦，继续学习，不断进步，有啥学习紧张都会更新哒，冲冲冲！:rocket:
+——zcc要毕业啦，继续学习，不断进步，有啥新的学习体会都会更新哒（后面可能还会有一个乱七八糟书的读书心得，或者推荐），冲冲冲！:rocket:
