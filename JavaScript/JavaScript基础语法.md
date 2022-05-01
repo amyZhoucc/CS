@@ -1,12 +1,10 @@
-
-
 # JavaScript基础语法
 
 主要内容来自于《head first JavaScript》（最后一章和Ajax相关的过了一遍，但是不是很理解，所以没有写上去:sweat_smile:打算后面看《JavaScript DOM编程艺术》和《JavaScript高级程序设计》有更详细的了解之后进行补充，并且后面看这两本书的时候，对简单的必要的知识补充会在这边，如果比较复杂，会直接新开内容）
 
 ## JavaScript的性质
 
-JavaScript是脚本解释语言
+JavaScript是脚本解释语言，弱类型语言
 
 JavaScript的优势：让原本静态的网页具备**交互性**，根据用户的反馈进行页面变化
 
@@ -16,7 +14,7 @@ eg：判断用户的输入是否合法，去查询服务器上面的数据，进
 
 JavaScript、HTML、CSS并称为网页三大元素，HTML是车的骨架、CSS是车漆、JavaScript是轮胎，**只有JavaScript存在，车（网页）才能动起来**
 
-JavaScript一般也直接放在网页中。
+JavaScript代码一般也直接放在网页中。
 
 浏览器执行逻辑：
 
@@ -50,7 +48,7 @@ HTML的任何地方都能插入脚本，但是最好固定地方，例如文件�
 </html>
 ```
 
-注意，script标签表示是后面是脚本代码，浏览器可以支持多种脚本语言的代码，但是**`type="text/javascript"`**才是指定脚本语言是JavaScript的
+注意，script标签表示是后面是脚本代码，浏览器可以支持多种脚本语言的代码，但是**`type="text/javascript"`**才是指定脚本语言是JavaScript的（目前已经被废弃）
 
 如果JavaScript是用外部文件，则需要导入文件
 
@@ -64,26 +62,171 @@ JavaScript区分大小写
 
 ### 基本数据类型
 
+基本数据类型都是按值访问的
+
 有3种基本数据类型：
 
 1. **number**，可以是整数也可以是浮点数
+
+   如果数字本身是整数，就是小数点后面跟着0，它也会被转换为整数（为了减少内存开销）
+
+   number能表示的数值有范围，最小为Number.MIN_VALUE；最大为Number.MAX_VALUE（和Java中的一样）
+
+   当计算得到的数超过表示范围后，这个值会自动转换成一个特殊的值，正数为**`Infinity`**，负数会被转换为**`-Infinity`**
+
+   可以用`isFinite()`函数来测试值是否是有限大
+
+   转型函数，可以用于任何数据类型：`Number()`
+
+   字符串转换为数值：`parseInt()`和`parseFloat()`
+
+   - Number()
+
+     字符串可以转换为合法的数值时（整个字符串都是合法数值的），能够进行转换；空字符串，返回0；其他无法转换的，直接返回NaN
+
+     对于对象，调用`valueOf()`按照规则转换，如果转换结果为NaN，调用`toString()`方法，再按照字符串的规则转换
+
+   - parseInt()
+
+     从第一个非空格字符开始转换。如果第一个字符不是数值字符、加号或减号，parseInt()立即返回NaN。一直转换直到字符串末尾，或碰到非数值字符。所以空字符串会直接返回NaN
+
+     eg：`parseInt(1234blue)=1234`，`parseInt(blue1234)=1234`
+
 2. **boolean**，true/false
-3. **string**
-4. **undefined**：未初始化
-5. **null**
+
+   其他类型都有相应的布尔值等价形式，可调用特定的转型函数：`Boolean()`
+
+   eg：`Boolean(message)`
+
+   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220410160842837.png" alt="image-20220410160842837" style="zoom:40%;" />
+
+3. **string**——特别注意，它是基本数据类型，而不是对象，也不是数组
+
+   可以用单引号`''`、双引号`""`、反引号` 标示
+
+   转换为字符串的方法`toString()`，`11.toString()="11"`，`toString()`接受参数，表示以什么底数进行转换`10.toString()="1010"`
+
+4. **undefined**：未初始化，是由null派生而来，他们字面上相等
+
+   `undefined == null`返回的是true
+
+   ——假值
+
+5. **null**：是对空对象的引用
+
+   ——假值
+
+   建议：对于要保存对象的变量是，而当前又无法赋值的，建议直接赋值为null——这样就可以保证变量的语义，并且也能和undefined进行区分
+
+5. symbol
 
 还有其他类型：
 
-1. 描述“没有值”这个状态的值：**`undefined`**
-2. 非数字：`NaN`，无法计算出该数字的值，是用来表示数字数据类型有误时的指标，一般是在计算需要数字，但是收到非数值的数据时才会看到NaN
+1. 描述“没有值”这个状态的值：**`undefined`**，声明了变量但没有初始化就是赋予了undefined值
+
+2. 非数字：**`NaN`**，无法计算出该数字的值，是用来表示数字数据类型有误时的指标，一般是在计算需要数字，但是收到非数值的数据时才会看到NaN
+
+   并且非数值可以转换为数值的话，返回也是false（先转换为数值，后判断）；布尔值也能转换为数值，所以返回false
 
 eg：alert里面只能传入string类型，所以如果要输出数字，实际上内部是将它转换为文本之后呈现。特别的如果代码是一个表达式，那么会先计算，eg：`alert(1+3);` 就会输出4
 
+判断变量当前类型：**`typeof xxx`**，返回的是字符串类型的结果
+
+一些反直觉常见的返回结果：
+
+1. `typeof null = "object"`
+2. `typeof message = "undefined"`（message是声明了，但尚未初始化的变量）
+3. `typeof message = "undefined"`（message尚未声明）——对于未声明的变量，只能进行这一个操作
+
+### 变量声明的关键字
+
 1. **变量`var`**，在使用之前初始化即可
 
-   JS解释器会自行推断变量类型，且赋值修改之后可以改变数据类型
+   - 未初始化，变量会保存一个特殊值undefined
 
-2. **常量`const`**，声明时就需要赋值，且只能赋值一次。有些浏览器不支持（不知道现在支不支持）
+   - JS解释器会自行推断变量类型，且赋值修改之后可以改变数据类型（合法但不推荐）
+
+   - **var声明提升**——**所有变量声明都拉到函数作用域的顶部**
+
+     ```javascript
+     function example(){
+         console.log(age);
+         var age = 23;
+     }
+     example();			// 不会报错，返回undefined
+     
+     // 上面的代码等价于
+     function example(){
+         var age;			// var的声明提升，但是赋值不会提升
+         console.log(age);
+         age = 23;
+     }
+     example();
+     ```
+
+   - 反复用var声明同一个变量名是不会报错的
+
+   - var在全局声明的变量会成为**window对象的属性**
+
+     eg:
+
+     ```javascript
+     var name = "zcc";
+     console.log(window.name);		// 正常输出
+     ```
+
+2. **let**：
+
+   - let声明的范围是块作用域，离开代码块后就被清除了（var的区别）
+
+   - 用let声明同一个变量名会报错（var的区别2）
+
+   - **let的声明不会提升**（var的区别3）
+
+     ```javascript
+     function example(){
+         console.log(age);
+         let age = 23;
+     }
+     example();			// 会报错，提示Reference Error，变量尚未定义就使用
+     ```
+
+   - 如果let和var都声明一个变量名，会报错——因为let和var只是指出变量作用域的位置
+
+   - let即时全局声明，也不会成为window对象的属性
+
+     eg：
+
+     ```javascript
+     let name = "zcc";
+     console.log(window.name);		// undefined
+     ```
+
+   ——let不能依赖条件声明：let的作用域是代码块内部，所以不会去检查前面是否定义过；且它禁止重复声明，所以声明过了保险起见的重新声明会报错
+
+   ```javascript
+   // 条件声明1
+   if(typeof name == 'undefined'){
+       let name;		// 这样声明的name作用域在if语句内，出去了就无效了
+   }
+   
+   // 条件声明2
+   try{
+       console.log(name);
+   }catch(error){
+       let name;			// 这样的条件声明也是无效的
+   }
+   ```
+
+   ——**对于let这个新的ES6声明关键字，不能依赖条件声明模式**
+
+   let最常用的地方：for循环的迭代变量i，声明let，可以避免渗透到循环体外部
+
+3. **常量`const`**，声明时就需要赋值，且只能赋值一次。
+
+   如果const修饰的是一个对象，那么该对象的引用无法修改，但是对象的属性值可以修改
+
+4. 如果在方法里面声明一个变量，但是没有带上关键字var，那么会变成全局变量——不推荐的写法（这些变量将很难维护，在严格模式下，会抛出ReferenceError）
 
 重新载入网页，脚本的数据会重置，变到尚未执行时的状态
 
@@ -93,11 +236,92 @@ eg：alert里面只能传入string类型，所以如果要输出数字，实际�
 2. 第一个字符是字母或者`$`或者`_`
 3. 后面的字符是字母、数字、`_`、`$`
 
-默认的命名方式：小写驼峰式，常量全大写
+默认的命名方式：**小写驼峰式**，常量全大写
 
 将变量写在方法外面，就是全局变量，它的存活时间和脚本的生命相同
 
-如果在方法里面声明一个变量，但是没有带上关键字var，那么会变成全局变量——不推荐的写法
+### 操作符
+
+特别需要注意的点：
+
+1. 指数操作符，`**`，可以用来替换Math.pow()
+2. `~`按位非操作，返回数值的补数，最终效果是数值取反，后-1
+3. 逻辑非操作（`!`）会操作数转换为布尔值
+4. ++/--，字符串，如果是有效的数值形式，则转换为数值再应用改变。**变量类型从字符串变成数值**；如果不是有效的数值形式，则将变量的值设置为NaN；浮点值，加1或减1；如果对象，valueOf()方法取得可以操作的值，然后再应用规则
+
+#### 比较操作符
+
+需要注意的是：
+
+1. 操作数都是字符串，则逐个比较字符串中对应字符的编码
+
+2. 任一操作数是数值，则将另一个操作数转换为数值，执行数值比较
+
+3. 任一操作数是对象，则调用其valueOf()方法，取得结果后再根据前面的规则执行比较。如果没有valueOf()操作符，则调用toString()方法，取得结果后再根据前面的规则执行比较
+
+4. 有任一操作数是布尔值，则将其转换为数值再执行比较
+
+5. 如果一个是字符，一个是数值，字符会进行转换，但是如果无法转换（变成NaN）
+
+   ——任何关系操作符在涉及比较NaN时都返回false
+
+   ——所以就会返回false
+
+#### */%三种操作符
+
+**对于非数值，会增加一个自动类型转换，使用Number()转换成数值**，如果转换失败则返回NaN
+
+*的特殊情况：
+
+1. 如果有任一操作数是NaN，则返回NaN
+2. Infinity乘以0，则返回NaN
+3. Infinity乘以非0的有限数值，则根据第二个操作数的符号返回Infinity或-Infinity
+4. Infinity乘以Infinity，则返回Infinity
+
+/的特殊情况：（如果无法除尽，则会出现小数）
+
+1. 如果有任一操作数是NaN，则返回NaN
+2. Infinity除以Infinity，则返回Infinity
+3. 0/0，返回NaN
+4. 非0的有限值除以0，则根据第一个操作数的符号返回Infinity或-Infinity
+5. Infinity除以任何数值，则根据第二个操作数的符号返回Infinity或-Infinity
+
+%的特殊情况：
+
+1. 被除数为infinity，除数是有限值，返回NaN
+2. 被除数为有限值，除数是0，返回NaN
+3. infinity % infinity，返回NaN
+4. 被除数为有限值，除数是无限值，返回被除数
+5. 0 % 非0值，返回0
+
+#### 相等操作符
+
+有两组，来比较两个变量是否相等的
+
+1. `==` 和 `!=`，在比较之前如果便两个类型不同，会先进行转换，后比较
+2. `===` 和 `!==`，类型不同也不转换
+
+类型转换的规则：
+
+1. 存在一个布尔值，先转换为数值，后比较
+2. 存在一个字符串，一个数值，字符串尝试转数值（调用Number()方法转换的）
+3. 一个变量是对象，则先调用valueOf()取得值，再比较
+
+比较的规则：
+
+1. null和undefined在`==`上相等，在`===`不相等，因为不是相同的数据类型
+2. null和undefined不能转换为其他类型的值再进行比较
+3. 有任一操作数是NaN，则相等操作符返回false
+4. 如果两个操作数都是对象，则比较它们是不是同一个对象
+
+### 分号
+
+语句以分号做结尾，**虽然不是必须的，也应该加上**
+
+好处：
+
+1. 能够方便删除空行，从而压缩代码
+2. 加分号能够提升性能，因为解析器会尝试在合适的位置补上分号以纠正语法错误。
 
 ### 注释
 
@@ -112,9 +336,49 @@ eg：alert里面只能传入string类型，所以如果要输出数字，实际�
  */
 ```
 
+还可以使用HTML格式的注释，可以作为单行注释（不建议）
+
+`<! --`，注意不需要结束的`-->`
+
+### 严格模式
+
+严格模式是一种不同的JavaScript解析和执行模型。
+
+一些不规范的写法会在这种模式下会被处理，一些不安全的操作也会被抛出
+
+1. 对整个脚本启用严格模式，脚本开头加上：`"use strict";` 这是一个预处理指令，浏览器能够据此开启严格模式
+2. 可以单独指定对单个函数开启严格模式，在函数开头即可：`"use strict";`
+
 ### 对象
 
-是复杂数据类型
+是复杂数据类型，按照引用访问
+
+#### 动态属性
+
+对于引用值来说，可以随时添加、修改和删除属性和方法
+
+```javascript
+let person = new Object();
+person.name = "zcc";			// 给该对象添加了一个name的动态属性，后面就可以对它操作了
+```
+
+辨析：原始值是不能有属性的，虽然添加属性的操作不会报错，但如果想访问就会报错
+
+```javascript
+let name = "zcc";
+name.age = 27;
+console.log(name.age);		// 会打印出undefined
+```
+
+如果基本数据类型，但是可以创建一个Object类型的实例，从而能够有动态属性
+
+```javascript
+let name = new String("zcc");		// 这就变成了一个对象，但是行为类似原始值
+```
+
+
+
+#### 
 
 构造函数的写法和普通的方法一致，额外要求：**方法名和类名一致**
 
@@ -204,43 +468,142 @@ Math是一个组织对象，没有变量，只包含数学相关的公用方法�
 
 ### 选择语句
 
-`if...else`和`if.. if else...else`
+1. `if...else`和`if.. if else...else`
 
-`switch(...)`
+   if中传入的表达式可以是任意的，可以编译器会调用`Boolean()`进行转换成布尔值
 
-`case "a": ... break;`
+2. ```javascript
+   switch(...){
+          case xxx: break;
+          ...
+          default: xxx;
+   }
+   ```
+
+   JS对switch的功能进行了扩展
+
+   - switch语句可以用于所有数据类型，可以传入字符串、对象等
+   - case可以常量、变量、表达式
+
+   eg：
+
+   ```javascript
+   switch("helloworld"){		// switch是字符串
+       case "hello" + "world": break;	// case是表达式
+       case "goodbye": break;
+       default:
+   }
+   ```
+
+   ```javascript
+   let num = 25;
+   switch (true) {
+       case num < 0:
+           console.log("Less than 0.");
+           break;
+       case num >= 0 && num <= 10:
+           console.log("Between 0 and 10.");
+           break;
+       case num > 10 && num <= 20:
+           console.log("Between 10 and 20.");
+           break;
+       default:
+           console.log("More than 20.");
+   }
+   ```
+
+   注意：switch语句在比较每个条件的值时会使用**全等操作符，因此不会强制转换数据类型**（比如，字符串"10"不等于数值10）
 
 ### 循环语句
 
-`for(var i = 0; i < arr.length; i++){}`
+1. `for(var i = 0; i < arr.length; i++){}`
 
-`while(xxx){}`
+   - for-in语句：`for(property in expression){...}`
 
-### 数组
+     它是一个严格的迭代语句，用来遍历对象中的非符号键属性
 
-**`var arr = new Array();`**创建数组
+     ```javascript
+     for(const proName in window){
+         alert(proName);
+     }
+     ```
 
-`var arr = [12, 14, 15, 18];`边创建边初始化
+     ——这边的const不是必须的，**主要是为了保证局部变量不被修改**
 
-数组里面可以存放不同类型的数据
+     如果for-in循环中的变量是null/undefined，就不会开始循环
 
-数组有一个方法`arr.sort()`，来进行排序，默认是升序排列
+   - for-of语句：`for(property of statement){...}`
 
-可以添加自定义的排序方式，可以传递方法：`arr.sort(compare)`
+     用来遍历可迭代对象的元素（数组、序列等）
+
+     ```javascript
+     for(const proName of [2,3,4,5]){
+         alert(proName);
+     }
+     ```
+
+2. `while(xxx){}/do{}while(xxx)`
+
+#### 标签语句
+
+ 给语句添加标签（类似于单片机中的操作），典型应用场景就是嵌套循环。
+
+eg：
 
 ```javascript
-function compare(x, y){
-    return y - x;	// 这就是逆序排列
+start: for(let i = 0; i < 5; i++){
+    ...
 }
-arr.sort(compare);
-
-// 其他方法
-arr.sort(function compare(blog1, blog2){
-    return blog2.date - blog1.date;
-})
 ```
 
+一般在continue和break中使用——和break配合使用，就能跳出多重循环
 
+eg：
+
+```javascript
+outermost: for(let i = 0; i < 10; i++){
+    for(let j = 0; j < 10; j++){
+        if(i == 5 && j == 5){
+            break outermost;
+        }
+    }
+}
+// 这个循环会执行55次
+
+outermost: for(let i = 0; i < 10; i++){
+    for(let j = 0; j < 10; j++){
+        if(i == 5 && j == 5){
+            continue outermost;
+        }
+    }
+}
+// 这个循环会执行95次，在i= 5 j = 5之后跳出内层循环，重新开始i = 6 j=0之后的循环
+```
+
+### with语句
+
+有点像语法糖
+
+with是将代码作用域设置为特定的对象，主要使用场景：针对一个对象反复使用，用with将代码作用域设置为该对象能较少代码量
+
+eg：
+
+```javascript
+let qs = location.search.substring(1);
+let hostName = location.hostname;
+let url = location.href;
+
+// 上面等价于
+with(location){
+    let qs = search.substring(1);
+    let hostname = hostname;
+    let url = href;
+}
+```
+
+解释器在该代码段中，会先将遇到的变量当作局部变量，看是否有声明；如果没有找到，则认为是location对象的属性，在location对象中找，如果找不到就会报错
+
+——严格模式禁止使用
 
 ### 函数
 
@@ -301,7 +664,7 @@ document.getElementById("seat").onclick = function(param){
 
 ==**alert()**==内置函数，参数是string
 
-注意：外面有双引号，里面就只能是单引号（当然可以添加转义字符\来进行替换）
+注意：**外面有双引号，里面就只能是单引号（当然可以添加转义字符\来进行替换）**
 
 JavaScript代码可以放在<script>标签中，也可以放在事件处理器中
 
@@ -595,4 +958,52 @@ eg2：`/^\w+@\w+\.\w{2,3}$/`邮件的规则
 eg3：<img src="pic\image-20220405162801501.png" alt="image-20220405162801501" style="zoom:45%;" />（更复杂的邮件规则）
 
 `/^[\w\.-\+]+@[\w-]+(\.\w{2,4})+$/`
+
+## 小tip
+
+1. var和let
+
+   for循环中的超时逻辑
+
+   ```javascript
+   for(var i = 0; i < 5; i++){
+       setTimeout(() => console.log(i), 0);
+   }
+   // 输出：5,5,5,5,5
+   
+   for(let i = 0; i < 5; i++){
+       setTimeout(() => console.log(i), 0);
+   }
+   // 输出：0，1，2，3，4
+   ```
+
+   第一个迭代变量声明的是var，所以它保存的是退出循环后的值5，所有超时逻辑拿到的值就是5
+
+   第二个是let，**JavaScript引擎在后台会为每个迭代循环声明一个新的迭代变量**，所以console.log就是每次保存的不同变量实例
+   
+2. typeof和instanceof
+
+   typeof最适合用来判断变量是否是基本数据类型，但是对引用数据类型作用不大，一般都返回object
+
+   ```javascript
+   console.log(typeof a);		// 得到的是字符串类型的 "string"
+   ```
+
+   instanceof是通过给定变量名和类型，判断是否给定类型的实例，大部分用于引用类型判断上
+
+   ```javascript
+   console.log(a instanceof Object);		// true
+   ```
+
+   由于所有引用值都是Object的实例，所以，`对象实例 instanceof Object`都是true，但是如果是基本数据类型，就均返回false
+
+   此外：typeof操作符在用于检测函数时也会返回"function"；typeof对正则表达式也返回"function"（在IE和Firefox中，typeof对正则表达式返回"object"）
+
+   
+
+3. 
+
+
+
+
 
