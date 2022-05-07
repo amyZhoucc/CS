@@ -10,7 +10,7 @@
 
 eg：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220501184740443.png" alt="image-20220501184740443" style="zoom:50%;" />
+<img src="..\pic\image-20220501184740443.png" alt="image-20220501184740443" style="zoom:50%;" />
 
 （右侧就是view树）
 
@@ -28,7 +28,7 @@ window机制主要负责的：view的展示（view的绘制），**view的事件
 
 系统服务WindowManagerService（WMS）管理的单位就是window，也就是view树为单位，而view树是靠ViewRootImpl来管理的
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220501185331390.png" alt="image-20220501185331390" style="zoom:60%;" />
+<img src="..\pic\image-20220501185331390.png" alt="image-20220501185331390" style="zoom:60%;" />
 
 通过图可以发现：
 
@@ -58,7 +58,7 @@ PhoneWindow内部维护着**view树和一些window参数**，而**该view树的�
 
 **Activity持有该PhoneWindow的实例**，从而实现对view树的管理
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220502145801691.png" alt="image-20220502145801691" style="zoom:60%;" />
+<img src="..\pic\image-20220502145801691.png" alt="image-20220502145801691" style="zoom:60%;" />
 
 目的：PhoneWindow作为窗口辅助类，能够帮助类更好的管理控件与页面布局
 
@@ -68,7 +68,7 @@ PhoneWindow内部维护着**view树和一些window参数**，而**该view树的�
 
 DecorView可以看成是一个界面模板，包含了主题颜色、标题栏，这些都是在DecorView中设定的
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220502150227958.png" alt="image-20220502150227958" style="zoom:50%;" />
+<img src="..\pic\image-20220502150227958.png" alt="image-20220502150227958" style="zoom:50%;" />
 
 Activity的布局页面都会插入到内容中，所以activity的布局会成为DecorView树的一部分
 
@@ -127,11 +127,11 @@ MotionEvent对象如何记录触摸的坐标呢？
 
 ——**维护一个数组**，数组中的每项对应不同的触摸点，通过数组下标进行索引
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220502210507592.png" alt="image-20220502210507592" style="zoom:60%;" />
+<img src="..\pic\image-20220502210507592.png" alt="image-20220502210507592" style="zoom:60%;" />
 
 ——注意，**触控点的索引是在变化的**，所以**追踪触控点，需要根据其id，而不是索引**
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220502211018227.png" alt="image-20220502211018227" style="zoom:60%;" />
+<img src="..\pic\image-20220502211018227.png" alt="image-20220502211018227" style="zoom:60%;" />
 
 （本来有两个触摸点a、b，此时用户将触摸点a抬起了，那么触摸点b就顺移到了索引0的位置）
 
@@ -166,7 +166,7 @@ MotionEvent事件到来的时候，会将不同的触摸点的信息组成不同
 
 可以通过`FLAG_SPLIT_MOTION_EVENT`判断是否要多触摸点分离
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220503101529095.png" alt="image-20220503101529095" style="zoom:67%;" />
+<img src="..\pic\image-20220503101529095.png" alt="image-20220503101529095" style="zoom:67%;" />
 
 ps：还增加了相关鼠标操作的事件，eg：`ACTION_HOVER_ENTER`（没有按下，但是鼠标移动到了view区域），`ACTION_HOVER_MOVE`（没有按下，在view区域移动），`ACTION_HOVER_EXIT`（没有按下，鼠标移出view区域），`ACTION_SCROLL`（滚轮滚动，可以有水平AXIS_HSCROLL和竖直滚动AXIS_VSCROLL）
 
@@ -206,7 +206,7 @@ TouchTarget用一个整型数来记录所有的触摸点id，通过0/1来表示�
 
 问题：用户触摸屏幕的操作是如何传递到WMS（前半程的任务）
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220501190634091.png" alt="image-20220501190634091" style="zoom:60%;" />
+<img src="..\pic\image-20220501190634091.png" alt="image-20220501190634091" style="zoom:60%;" />
 
 用户触摸之后，由底层硬件感知，然后通知系统底层对应的驱动，交给Android的输入系统：IMS（inputManagerService）。
 
@@ -253,7 +253,7 @@ ViewGroup本质上还是继承自View的，view树的顶层是ViewGroup（顶层
 
    下图就是分发的逻辑：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220502142023066.png" alt="image-20220502142023066" style="zoom: 67%;" />
+<img src="..\pic\image-20220502142023066.png" alt="image-20220502142023066" style="zoom: 67%;" />
 
 1. viewRootImpl在将触摸动作封装成`MotionEvent`对象之后，调用view树顶层的view对象的`dispatchTouchEvent()`（这边的view对象是一个泛指），这边就会判断view的具体类型
 2. 顶层如果是view类型（这边的view对象是特指），那么**该view对象会直接处理事件**；如果是viewGroup类型，则继续判断
@@ -386,7 +386,7 @@ private class PopupDecorView extends FrameLayout{
 
       且`OnTouchListener`中的回调方法`onTouch()`就会被回调执行，根据其返回值，**如果返回false，那么`onTouchEvent()`方法还是会被执行**；**如果返回true，则`onTouchEvent()`就不会被执行了**
 
-      <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220505101847773.png" alt="image-20220505101847773" style="zoom:60%;" />
+      <img src="..\pic\image-20220505101847773.png" alt="image-20220505101847773" style="zoom:60%;" />
 
    
 
@@ -469,17 +469,17 @@ ps：Java的异常也是责任链模式
 
 1. 事件一路发下去，一直没人处理，直到回到activity处：
 
-   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220504212437456.png" alt="image-20220504212437456" style="zoom: 60%;" />
+   <img src="..\pic\image-20220504212437456.png" alt="image-20220504212437456" style="zoom: 60%;" />
 
    （这边是为了方便绘图做了一些简化：1. 父view是通过`onInterceptTouchEvent()`的返回值来判断是否自行拦截，还是发给子view，但是不是在该方法中去调用子类的`dispatchTouchEvent()` 2. 子view不处理，`dispatchTouchEvent()`是一个返回值，父view会有对应的标志位接收，而不是直接返回给父view的`onTouchEvent()`，而该方法是根据标志位来判断是否调用的）
 
 2. 事件一路发下去，最底层的view处理了
 
-   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220504213045426.png" alt="image-20220504213045426" style="zoom:60%;" />
+   <img src="..\pic\image-20220504213045426.png" alt="image-20220504213045426" style="zoom:60%;" />
 
 3. 事件一路发下去，中间有viewGroup拦截处理了
 
-   <img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220504213243334.png" alt="image-20220504213243334" style="zoom:60%;" />
+   <img src="..\pic\image-20220504213243334.png" alt="image-20220504213243334" style="zoom:60%;" />
 
    eg：在list中，滑动操作是交给RecyclerView，而不会交给下面的tiem的view处理
 
@@ -1168,7 +1168,7 @@ if (canceled
 
 eg：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220507150536576.png" alt="image-20220507150536576" style="zoom:50%;" /><img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220507150549655.png" alt="image-20220507150549655" style="zoom:50%;" />、
+<img src="..\pic\image-20220507150536576.png" alt="image-20220507150536576" style="zoom:50%;" /><img src="..\pic\image-20220507150549655.png" alt="image-20220507150549655" style="zoom:50%;" />、
 
 ```java
 // 在dispatchTouchEvent中执行之前进行过滤的内容

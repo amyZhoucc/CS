@@ -101,7 +101,7 @@ public static void main(String[] args) {
 
 图是整个程序的启动过程：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220429183316979.png" alt="image-20220429183316979" style="zoom:50%;" />
+<img src="..\pic\image-20220429183316979.png" alt="image-20220429183316979" style="zoom:50%;" />
 
 **当应用程序被创建的时候，一开始只有主线程（ActivityThread）和2个Binder线程，主线程创建了Looper和handler。**
 
@@ -239,13 +239,13 @@ handler机制由几个方面组成的：
 3. looper：**一个线程只有一个**，循环执行消息的处理。
 4. messageQueue：消息队列，是Looper的内部对象，同样一个线程只有一个
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220427103344663.png" alt="image-20220427103344663" style="zoom:55%;" />
+<img src="..\pic\image-20220427103344663.png" alt="image-20220427103344663" style="zoom:55%;" />
 
 通过handler将message/runnable发送到对应的线程，message/runnable会被加入到messageQueue，looper算是一个死循环，不断从messageQueue中按照顺序取出，交给对应的handler（就是最初发送过来的handler）去处理——用handleMessage方法
 
 ### 基本的类图
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220429161714118.png" alt="image-20220429161714118" style="zoom:67%;" />
+<img src="..\pic\image-20220429161714118.png" alt="image-20220429161714118" style="zoom:67%;" />
 
 
 
@@ -634,7 +634,7 @@ public static void main(String[] args){
 
 ### ThreadLocal的内部机制
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220427133158295.png" alt="image-20220427133158295" style="zoom:50%;" />
+<img src="..\pic\image-20220427133158295.png" alt="image-20220427133158295" style="zoom:50%;" />
 
 每个线程都有一个**ThreadLocalMap**，类似于HashMap——由于ThreadLocalMap是跟着Thread对象走的，所以只有获得Thread对象才能获取里面的ThreadLocal值——这就实现了线程隔离
 
