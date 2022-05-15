@@ -35,22 +35,7 @@ window机制主要负责的：view的展示（view的绘制），**view的事件
 1. **WMS是在系统服务进程中的**，负责管理所有的window。**应用程序和WMS之间通过Binder通信进行跨进程通信**（而不是handler）
 2. 每个viewRootImpl在WMS都有一个**windowState**与之对应，所以WMS是通过windowState来查找对应的viewRootImpl，从而实现管理
 
-### 3. view内置的相关方法
-
-前面知识已知：ViewGroup本质上是继承View方法，并且对部分方法进行重写。
-
-View类有一个方法用于事件分发：==**`dispatchTouchEvent()`**==（字面意思就是分发触摸事件），子类可重写该分发方法的逻辑，ViewGroup由于继承自View，所以会重写该方法
-
-1. ViewGroup对象中，`dispatchTouchEvent()`主要负责将事件下发
-2. View对象中，`dispatchTouchEvent()`主要负责处理事件
-
-==**`onTouchEvent()`**==，事件的消费都在此
-
-一般自定义view会重写`dispatchTouchEvent()`和`onTouchEvent()`两个方法。
-
-
-
-### 4. PhoneWindow
+### 3. PhoneWindow
 
 PhoneWindow是继承自Window抽象类的，它是一个**窗口辅助类**，而不是一个window。**在android中，PhoneWindow是Window抽象类的唯一实现**（在android.policy.PhoneWindow）
 
@@ -64,7 +49,7 @@ PhoneWindow内部维护着**view树和一些window参数**，而**该view树的�
 
 注意：PhoneWindow不是activity特有的，dialog也如此
 
-### 5. DecorView
+### 4. DecorView
 
 DecorView可以看成是一个界面模板，包含了主题颜色、标题栏，这些都是在DecorView中设定的
 
@@ -73,6 +58,19 @@ DecorView可以看成是一个界面模板，包含了主题颜色、标题栏�
 Activity的布局页面都会插入到内容中，所以activity的布局会成为DecorView树的一部分
 
 ——而activity持有PhoneWindow对象，通过该对象**间接管理自己的布局**，**把window相关的操作都交给PhoneWindow进行处理，减轻activity的管理压力**
+
+### 5. view内置的相关方法
+
+前面知识已知：ViewGroup本质上是继承View方法，并且对部分方法进行重写。
+
+View类有一个方法用于事件分发：==**`dispatchTouchEvent()`**==（字面意思就是分发触摸事件），子类可重写该分发方法的逻辑，ViewGroup由于继承自View，所以会重写该方法
+
+1. ViewGroup对象中，`dispatchTouchEvent()`主要负责将事件下发
+2. View对象中，`dispatchTouchEvent()`主要负责处理事件
+
+==**`onTouchEvent()`**==，事件的消费都在此
+
+一般自定义view会重写`dispatchTouchEvent()`和`onTouchEvent()`两个方法。
 
 ### 6. MotionEvent
 
@@ -90,7 +88,7 @@ Activity的布局页面都会插入到内容中，所以activity的布局会成�
 
 3. ==**`ACTION_UP`**==：手指从屏幕上离开的瞬间
 
-4. ==**`ACTION_CANCEL`**==：当出现异常情况，事件序列被中断，就会产生该事件；**上层view拦截了下层正在处理的事件（上层的view回收了处理权）**，则会发送CANCEL到子view，表示事件已经结束，后续不会再传递过来
+4. ==**`ACTION_CANCEL`**==：当出现异常情况（非人为原因），事件序列被中断，就会产生该事件；**上层view拦截了下层正在处理的事件（上层的view回收了处理权）**，则会发送CANCEL到子view，表示事件已经结束，后续不会再传递过来
 
    eg: RecyclerView收到了DOWN事件，所以它会选择交给对应范围内的item询问是否处理。而此时，又传递过来MOVE，且滑动方向和RecyclerView的可滑动方向一致，那么RecyclerView认为这是一个滑动事件，所以它要回收触摸的处理权，所以对应的item会收到一个CANCEL的通知，且之后也不会收到关于该事件的通知了
 
@@ -305,6 +303,29 @@ public boolean superDispatchTouchEvent(MotionEvent event) {
 public boolean superDispatchTouchEvent(MotionEvent event) {
     return super.dispatchTouchEvent(event);
 }
+
+// Activity.java api30
+// 当传递一圈，发现没有view来处理，那么activity会选择自行处理
+public boolean onTouchEvent(MotionEvent event) {
+    // 边界外，返回true，那么就结束该事件，返回true；否则在边界内，返回false（对默认的activity实现方法）
+    if (mWindow.shouldCloseOnTouch(this, event)) {
+        finish();
+        return true;
+    }
+    return false;
+}
+// PhoneWindow.java api28
+// 处理边界外的点击事件，是否是DOWN事件，坐标是否在边界外——是，返回true，否，返回false
+public boolean shouldCloseOnTouch(Context context, MotionEvent event) {
+    if (mCloseOnTouchOutside && event.getAction() == MotionEvent.ACTION_DOWN
+        && isOutOfBounds(context, event) && peekDecorView() != null) {
+        // 返回true：说明事件在边界外，即 消费事件
+        return true;
+    }
+
+    // 返回false：在边界内，即未消费（默认）
+    return false;
+} 
 ```
 
 理解：window.callback交给activity去分发事件 -> activity调用phoneWindow对象来分发事件 -> phoneWindow调用decorView来分发事件 -> decorView直接调用父类的`dispatchTouchEvent()`，它的父类是FrameLayout，而该类并没有重写该方法，所以**最终调用到ViewGroup类的`dispatchTouchEvent()`方法**
@@ -312,6 +333,10 @@ public boolean superDispatchTouchEvent(MotionEvent event) {
 ——ViewGroup会按照逻辑分发到树中感兴趣的子控件
 
 ps：`onUserInteraction()`方法是留给用户自定义的，主要作用：在用户开始和activity进行交互的时候被调用。常用地方：屏保：长时间没有操作手机，就会显示一张图片，而当点击时会取消屏保——取消操作就是在`onUserInteraction()`中进行的；自动隐藏工具栏，当用户长时间不动，就隐藏工具栏，那么可以在这个方法中重现工具栏，那么用户再次点击的时候就会出现工具栏
+
+<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20220510095435162.png" alt="image-20220510095435162" style="zoom:80%;" />
+
+（再次强调，Activity不是直接传递给viewGroup的，而是一步一步的，从window、decorView，最后到ViewGroup）
 
 ### 2. Dialog
 
@@ -1711,7 +1736,11 @@ public boolean performClick() {
     break;
 ```
 
-主要参考：
+注意：
+
+ViewGroup半路拦截了一个MOVE事件（即本来该事件的后续序列由该ViewGroup的子view进行处理，但是发现ViewGroup自己想处理，eg：recyclerView），该事件就会从MOVE变成CANCEL事件，然后传递给之前处理的子view，而**该事件不会再传递给该ViewGroup的`onTouchEvent()`，只有等下一个事件到来时才直接给该ViewGroup的`onTouchEvent()`处理**
+
+# 主要参考
 
 1. https://juejin.cn/post/6918272111152726024
 2. https://juejin.cn/post/6920883974952714247
@@ -1725,6 +1754,7 @@ public boolean performClick() {
 10. https://www.viseator.com/2017/09/14/android_view_event_1/（偏底层硬件）
 11. https://www.viseator.com/2017/09/14/android_view_event_2/（偏底层硬件）
 12. https://www.viseator.com/2017/11/02/android_view_event_3/
+12. https://blog.csdn.net/carson_ho/article/details/54136311
 
 画图工具：
 

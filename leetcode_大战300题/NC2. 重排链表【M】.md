@@ -4,9 +4,9 @@
 
 **还有，zcc不要再看错题了！！！**——这都看错几次了！！！
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210901101253407.png" alt="image-20210901101253407" style="zoom:50%;" />
+<img src="pic\image-20210901101253407.png" alt="image-20210901101253407" style="zoom:50%;" />
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210901101306467.png" alt="image-20210901101306467" style="zoom:50%;" />
+<img src="pic\image-20210901101306467.png" alt="image-20210901101306467" style="zoom:50%;" />
 
 就是链表的插入，就是在原来顺序上：Ln插入到L1和L2之间，Ln-1插入到L2和L3之间....
 

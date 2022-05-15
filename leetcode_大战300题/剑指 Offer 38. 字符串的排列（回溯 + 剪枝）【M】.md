@@ -133,12 +133,12 @@ class Solution {
 
 
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210511120542875.png" alt="image-20210511120542875" style="zoom:67%;" />
+<img src="pic\image-20210511120542875.png" alt="image-20210511120542875" style="zoom:67%;" />
 
 全排列之后 + 数学计算。
 
 ## [51. N 皇后](https://leetcode-cn.com/problems/n-queens/)
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210511120845351.png" alt="image-20210511120845351" style="zoom:67%;" />
+<img src="pic\image-20210511120845351.png" alt="image-20210511120845351" style="zoom:67%;" />
 
 这个也是一个经典题，思路就是回溯，但是为了实现快速的判断，需要很多辅助，还有输出结果。

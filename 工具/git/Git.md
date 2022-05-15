@@ -10,28 +10,30 @@ Git是分布式版本控制系统
 
 ## 创建库
 
-1. `git init`
-2. `git add <file>`
-3. `git commit -m <message>`
+1. ==**`git init`**==
+2. ==**`git add <file>`**==
+3. ==**`git commit -m <message>`**==
 
 ## 看状态
 
-1. `git status`：看仓库当前状态
-2. `git diff <文件名>`：比较文件修改之前和现在的差别
+1. ==**`git status`**==：看仓库当前状态，哪些文件被修改了、哪些文件被新建了，都还没有
+2. ==**`git diff <文件名>`**==：比较文件修改之前和现在的差别
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519143721560.png" alt="image-20210519143721560" style="zoom: 50%;" />
+<img src="pic\image-20210519143721560.png" alt="image-20210519143721560" style="zoom: 50%;" />
 
 （上面的文件是已经被添加过了，但是发生了修改而且还未提交，而下面的文件是从来没有被添加过，所以它的状态是Untracked。）
 
 ## 版本回退
 
-`git log`查看命令。
+==**`git log`**==查看命令。
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519144144593.png" alt="image-20210519144144593" style="zoom:50%;" />
+<img src="pic\image-20210519144144593.png" alt="image-20210519144144593" style="zoom:50%;" />
 
 `commit id`版本号，而是一个SHA1计算出来的一个非常大的数字，用十六进制表示
 
-`git reset --hard HEAD^/ git reset --hard commitId`回退到上一个版本。版本号没必要写全，前几位就可以了，Git会自动去找。
+==**`git log --oneline`**==：能够看到log的简略信息，commitID也只有简单的前7位。
+
+==**`git reset --hard HEAD^/ git reset --hard commitId`**==回退到上一个版本。版本号没必要写全，前几位就可以了，Git会自动去找。
 
 ## 工作区和暂存区
 
@@ -51,7 +53,7 @@ Git是分布式版本控制系统
 
 ## 撤销修改
 
-`git checkout -- file`可以丢弃工作区的修改
+==**`git checkout -- file`**==可以丢弃工作区的修改
 
 命令`git checkout -- readme.txt`意思就是，把`readme.txt`文件在工作区的修改全部撤销，这里有两种情况：
 
@@ -75,11 +77,11 @@ Git是分布式版本控制系统
 
 而如果同步到版本库，那么rm删除就会被感应到，那么`git status`就会发现删除。
 
-如果要从版本库中删除该文件，那么`git rm -f <file>`，然后再次`git commit -m "ddf"`更新即可。
+如果要从版本库中删除该文件，那么**`git rm -f <file>`**，然后再次`git commit -m "ddf"`更新即可。
 
 那么工作区和版本区的内容都一样了。
 
-先手动删除文件，然后使用`git rm <file>`和`git add <file>`效果是一样的。
+**先手动删除文件，然后使用`git rm <file>`和`git add <file>`效果是一样的。**
 
 可以用前面的`git checkout -- file`可以恢复。
 
@@ -91,27 +93,27 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 
 下一步，就可以把本地库的所有内容推送到远程库上：
 
-要关联一个远程库，使用命令`git remote add origin <url>` remote表示远程库，远程库的名字默认是origin
+要关联一个远程库，使用命令==**`git remote add origin <url>`**==，remote表示远程库，远程库的名字默认是origin
 
-命令`git push -u origin main`第一次推送master分支的所有内容；
+命令==**`git push -u origin main`**==第一次推送master分支的所有内容；
 
-删除一个远程库：`git remote rm <name>`
+删除一个远程库：==**`git remote rm <name>`**==
 
 看远程库上的版本：`git remote -v`
 
 ## 创建和合并分支
 
-`git checkout -b dev`，表示创建并切换
+==**`git checkout -b dev`**==，表示创建并切换
 
-（`git checkout -b dev origin/dev` 从远程拉去分支到本地分支中）
+（==**`git checkout -b dev origin/dev`**== 从远程拉去分支到本地分支中）
 
 `git branch`可以用来查询当前分支。
 
-`git checkout master`切换分支
+==**`git checkout master`**==切换分支
 
-`git merge xxx`命令用于合并指定分支到当前分支，eg：当前分支是main，那么就是将xxx分支合并到main分支上。
+==**`git merge xxx`**==命令用于合并指定分支到当前分支，eg：当前分支是main，那么就是将xxx分支合并到main分支上。
 
-`git branch -d dev`删除分支
+==**`git branch -d dev`**==删除分支
 
 如果要丢弃一个没有被合并过的分支，可以通过`git branch -D <name>`强行删除。——大写的-D，表示强制删除
 
@@ -126,11 +128,9 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 
 `git merge xxx`，那么会存在冲突。当git无法自动合并分支时，就必须首先解决冲突。解决冲突后，再提交，合并完成。
 
-```
-<<<<<<<到=======是在当前分支合并之前的文件内容
-=======到>>>>>>> 是在其它分支下修改的内容
-需要在这个两个版本中选择一个，然后把标记符号也要一起删除
-```
+> `<<<<<<<`到`=======`是在当前分支合并之前的文件内容
+> `=======`到`>>>>>>>` 是在其它分支下修改的内容
+> 需要在这个两个版本中选择一个，然后把标记符号也要一起删除
 
 解决冲突就是把Git合并失败的文件手动编辑为我们希望的内容，再提交`git add .`那么可以将内容直接push上去了
 
@@ -144,7 +144,7 @@ remote表示远程库。添加后，远程库的名字就是`origin`，这是Git
 
 Git还提供了一个`stash`功能，可以把当前工作现场“储藏”起来，等以后恢复现场后继续工作
 
-1. 先将当前现场保存下来：`git stash`
+1. 先将当前现场保存下来：**`git stash`**
 
 2. 假定需要在`main`分支上修复，就从`main`创建临时分支：切换分支，然后在上面创建临时分支，然后进行代码修改。然后切回到分支，对临时分支进行合并，然后删除临时分支
 
@@ -161,7 +161,7 @@ Git还提供了一个`stash`功能，可以把当前工作现场“储藏”起�
    git switch dev
    ```
 
-3. `git stash list`可以看当时保护的现场
+3. ==**`git stash list`**==可以看当时保护的现场
 
 4. 恢复现场：一是用`git stash apply`恢复，但是恢复后，stash内容并不删除，你需要用`git stash drop`来删除；
 
@@ -192,11 +192,11 @@ Git还提供了一个`stash`功能，可以把当前工作现场“储藏”起�
 
 背景：从一个分支中分出两根，然后它们各自又提交了更新，此时需要将这两个分支进行合并，然后回归到原分支，eg：main
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519225050243.png" alt="image-20210519225050243" style="zoom:67%;" />
+<img src="pic\image-20210519225050243.png" alt="image-20210519225050243" style="zoom:67%;" />
 
 `merge` 命令：它会把两个分支的最新快照（`C3` 和 `C4`）以及二者最近的共同祖先（`C2`）进行三方合并，合并的结果是生成一个新的快照（并提交）——C5
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519224745652.png" alt="image-20210519224745652" style="zoom:67%;" />
+<img src="pic\image-20210519224745652.png" alt="image-20210519224745652" style="zoom:67%;" />
 
 另一个操作是：
 
@@ -210,7 +210,7 @@ git merge experiment			然后将experiment合并到主分支上——这个就�
 
 ——原理：先找到它们的共同祖先，然后对比当前分支相对于该祖先的变化，提取相应的修改形成临时文件，然后将当前分支指向C3，然后将临时文件的修改应用到C3中。于是内容变成了如下的原理：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210519225158469.png" alt="image-20210519225158469" style="zoom:50%;" />
+<img src="pic\image-20210519225158469.png" alt="image-20210519225158469" style="zoom:50%;" />
 
 ——把分叉的提交历史“整理”成一条直线，看上去更直观。缺点是本地的分叉提交已经被修改过了。
 
@@ -250,3 +250,9 @@ push到远程：`git push origin v1.0`/`git push origin --tags`推送全部的�
 
 1. 先从本地删除：`git tag -d v1.0`
 2. 在删除远程的：`git push origin :refs/tags/v0.9`
+
+## 禁止一些文件夹、文件上传
+
+一般在add文件的时候，都是`git add .`，就会默认将所有修改都放入暂存区
+
+**创建一个`.gitignore`文件**，然后直接将需要屏蔽的文件夹（文件）写入，并且将本次更新commit，那么对应的文件夹（文件）就不会上传了，只在本地有效——这个主要用于本地环境的配置，而不需要把这些文件上传

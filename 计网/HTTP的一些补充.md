@@ -64,7 +64,7 @@ eg：WebP
 
 ——递归回溯的思路：通过当前证书获取到中间证书，向上直到根证书，然后通过根证书的公钥去向下验证中间证书，验证通过说明该中间证书可信，然后通过中间证书的公钥去解密下一层的证书，直到最下层的当前证书验证通过。
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210419113920801.png" alt="image-20210419113920801"  />
+<img src="pic\image-20210419113920801.png" alt="image-20210419113920801"  />
 
 ## RSA的问题：
 
@@ -72,6 +72,6 @@ eg：WebP
 
 有了DH密钥交换技术：
 
-<img src="C:\Users\surface\AppData\Roaming\Typora\typora-user-images\image-20210419123635080.png" alt="image-20210419123635080" style="zoom:80%;" />
+<img src="pic\image-20210419123635080.png" alt="image-20210419123635080" style="zoom:80%;" />
 
 客户端和服务端都会生成一对公私密钥，然后分别交换公钥，然后根据自己的密钥和对方的公钥利用公开算法计算出对应的密钥，然后在后面都是用该密钥进行加密的。——密钥值是一样的，所以后续还是对称加密。由于每一次的对称密钥都是实时生成的，所以实现了前向保密。
